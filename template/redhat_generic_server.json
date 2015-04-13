@@ -1,0 +1,21 @@
+{
+    "name": "Demo Red Hat Standard Server",
+    "instance_id": "server",
+    "puppet_roles": ["role1","role2"],
+    "pre_cm_script": "",
+    "post_cm_script": "/etc/puppet/scripts/machine_config.sh",
+    "settings": {
+        "ami": "ami-8358d4f4",
+        "instance_type": "m3.medium",
+        "boot_script": "compact_user_data_script.sh",
+        "volumes": {
+            "/etc/infomentum": {
+                "size": 100,
+                "type": "standard",
+                "device": "/dev/xvdl",
+                "del_on_term": "True",
+                "iops": "False"
+            }
+        }
+    }
+}

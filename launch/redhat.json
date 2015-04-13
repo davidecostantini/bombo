@@ -1,0 +1,23 @@
+{
+    "customer_id": 100,
+    "subnet": "subnet-db09bcac",
+    "key": "mgmt_key",
+    "region": "",
+    "launch": {
+        "": {
+            "template": "redhat_generic_server",
+            "subnet": "",
+            "key": "",
+            "qty": 1,
+            "boot_script": "",
+            "sec_groups": {
+                "list": [
+                    "sg-d4c25cb1"
+                ]
+            },            
+            "hostname": "davedemo1",
+            "environment": "Dev",
+            "desc": "Launch test for presentation server"
+        }
+    }
+}
