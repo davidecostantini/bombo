@@ -3,11 +3,11 @@
     "instance_id": "server",
     "puppet_roles": ["role1","role2"],
     "pre_cm_script": "",
-    "post_cm_script": "/etc/puppet/scripts/machine_config.sh",
+    "post_cm_script": "",
     "settings": {
         "ami": "ami-8358d4f4",
         "instance_type": "m3.medium",
-        "boot_script": "compact_user_data_script.sh",
+        "boot_script": "replace_with_boot_script",
         "volumes": {
             "/etc/infomentum": {
                 "size": 100,

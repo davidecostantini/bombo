@@ -1,7 +1,7 @@
 {
-    "customer_id": 100,
-    "subnet": "subnet-db09bcac",
-    "key": "mgmt_key",
+    "customer_id": 1,
+    "subnet": "replace_with_subnet",
+    "key": "replace_with_key",
     "region": "",
     "launch": {
         "": {
@@ -12,12 +12,12 @@
             "boot_script": "",
             "sec_groups": {
                 "list": [
-                    "sg-d4c25cb1"
+                    "replace_with_sg"
                 ]
             },            
-            "hostname": "davedemo1",
+            "hostname": "replace_with_hostname",
             "environment": "Dev",
-            "desc": "Launch test for presentation server"
+            "desc": "Launch test"
         }
     }
 }
