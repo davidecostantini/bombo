@@ -9,7 +9,7 @@ from clsVolume import *
 from clsTemplate import *
 from clsSingleLaunch import *
 
-BOMBO_VERSION="1.0"
+BOMBO_VERSION="1.1"
 
 class LaunchConfig(clsBaseClass):
     __ObjConfig = None
