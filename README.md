@@ -1,4 +1,4 @@
-DocBrown - A tool to manage the cloud deployment integrated with Puppet
+Bombo - A tool to manage the cloud deployment integrated with Puppet
 
 ## INFO
 ==============
