@@ -1,0 +1,15 @@
+{
+    "1": {
+        "name": "Customer Name",
+        "settings": {
+            "dns_domain": "route53.domain.com",
+            "region": "eu-west-1",
+            "access_key": "",
+            "secret_key": "",
+            "puppet_repo": "ssh://user@github.com/repo.git",
+            "puppet_known_hosts": "",
+            "puppet_ssh_private": "",
+            "puppet_ssh_pub": ""
+        }
+    }
+}

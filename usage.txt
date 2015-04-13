@@ -1,0 +1,8 @@
+ -----USAGE MANUAL-------
+ ------------------------
+ run <config_name>                                                       -> Launch a config
+ backup <customer_id> <region> <instance_id> [<keep_instance_on>]        -> Backup instance volumes
+ copy <customer_id> <region> <instance_id> <subnet> [<keep_instance_on>] -> Start instance copy
+ version                                                                 -> Show the app version
+ usage									 -> Show this guide
+ ------------------------

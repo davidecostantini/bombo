@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+import sys
+import bombo
+
+def __paramsError():
+	bmb = bombo.bombo()
+	bmb.printMsg("","Hei mate don't waste my time! You must specify the right params number!",False,False,True)
+	bmb.printUsage()
+	sys.exit(0)
+
+def checkParams(kArgs,kExpected):
+	if not len(kArgs) in kExpected:
+		__paramsError()
+
+def main(args):
+	bmb = bombo.bombo()
+	action = args[0]
+
+	if action == "run":
+		checkParams(args,{2})
+		bmb.Launch(args[1])
+
+	elif action == "copy":
+		checkParams(args,{5,6})
+		kKeepInstanceOn = args[5] if len(args) == 6 else False
+
+		bmb.CopyInstance(args[1],args[2],args[3],args[4],kKeepInstanceOn)
+
+	elif action == "backup":
+		checkParams(args,{4,5})
+		kKeepInstanceOn = args[4] if len(args) == 5 else False
+		bmb.BackupInstance(args[1],args[2],args[3],kKeepInstanceOn)
+
+	elif action == "version":
+		bmb.showVersion()
+
+	elif action == "usage":
+		bmb.printUsage()		
+
+	else:
+		bmb.printMsg("CLI","Command '" + action + "' not found",True,True,True)
+
+
+if __name__ == "__main__":
+	if not len(sys.argv) > 1: #Check that at least 1 param was passed
+		__paramsError()
+	main(sys.argv[1:])
