@@ -1,0 +1,4 @@
+BOMBO_CUSTOMERS_CONFIG= '/etc/bombo/customers.json'
+BOMBO_REDIS_HOST= ""
+BOMBO_REDIS_PORT= "5379"
+BOMBO_REDIS_DB= "0"
