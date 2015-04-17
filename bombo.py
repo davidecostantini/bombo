@@ -55,7 +55,7 @@ class bombo(clsBaseClass):
     def Launch(self,kTemplateConfig="",kIsTest=False):
         self.showInitialMsg()
 
-        if (self.user_input("Do you really want play with cloud stuff? \nPlease be carefull and don't mess everything.... (y,n) ",["y","n"]).upper() == "Y"):
+        if (self.user_input("Do you really want play with cloud stuff? \nPlease be careful and don't mess everything.... (y,n) ",["y","n"]).upper() == "Y"):
             if kTemplateConfig:
                 self.__ObjLaunchConfig=LaunchConfig(kTemplateConfig)
             self.__runProcess(kIsTest)
@@ -131,7 +131,7 @@ class bombo(clsBaseClass):
 
         return reservation
 
-    def __checkLaunchStatus(self,kReservation):
+    def __checkLaunchStatus(self,kReservation,kEssentialInfo=False):
         import time, sys
         counter = 0
         spinner = self.__spinning_cursor()
@@ -149,11 +149,13 @@ class bombo(clsBaseClass):
         for instance in kReservation.instances:
             self.printMsg ("","#####################################################")
             self.printMsg ("","[BOMBO] Hey mate, instance " + str(instance.id) + " is now ready to be messed by you....")
-            if (instance.public_dns_name != ""):
-                self.printMsg ("","---> Public DNS: " + instance.public_dns_name)
-            self.printMsg ("","---> Private IP: " + instance.private_ip_address)
-            self.printMsg ("","---> Private DNS: " + instance.private_dns_name)
-            self.printMsg ("","#####################################################")
+            
+            if not kEssentialInfo:
+                if (instance.public_dns_name != ""):
+                    self.printMsg ("","---> Public DNS: " + instance.public_dns_name)
+                self.printMsg ("","---> Private IP: " + instance.private_ip_address)
+                self.printMsg ("","---> Private DNS: " + instance.private_dns_name)
+                self.printMsg ("","#####################################################")
 
     def __spinning_cursor(self):
         while True:
@@ -162,7 +164,7 @@ class bombo(clsBaseClass):
 
     def __setTag(self,kSingleLaunch,kLaunchConfig,kReservation):
         import boto.ec2
-        self.printMsg ("","[BOMBO] You're getting older mate, I'm tagging the intances so you can identify them!")
+        self.printMsg ("","[BOMBO] You're getting older mate, I'm tagging the instances so you can identify them!")
 
 
         for instance in kReservation.instances:
@@ -189,6 +191,7 @@ class bombo(clsBaseClass):
             self.printMsg ("",'[AWS] Assignin the tag LAUNCH: Launched with BOMBO ver. ' + BOMBO_VERSION)
             self.__awsConnection.create_tags([instance.id], {"BOMBO": str(BOMBO_VERSION)})
             self.printMsg ("",'---> DONE' )
+
 
     def searchSimilarAMI(self,kAwsConn,kInstance):
         #print "Return TMP AMI for ID"
@@ -323,7 +326,7 @@ class bombo(clsBaseClass):
         self.printMsg ("","---> Volumes ready...")
 
 
-        self.printMsg ("","Check AMI availablity " + instance.image_id + "...")
+        self.printMsg ("","Check AMI availability " + instance.image_id + "...")
         ObjInstance = clsInstance(instance.id,ObjCustomer,instance)
 
         if ObjInstance.checkAmiAvailility(self.__awsConnection):
@@ -525,3 +528,76 @@ class bombo(clsBaseClass):
             self.printMsg ("","---> " + "bombo_backup:DEVICE " + vol.attach_data.device)
 
         self.printMsg ("","Hopefully everything went well......")
+
+    def ApplyPowerSchedule(self,kCustomer):
+        from datetime import datetime, date
+        import sys, time, string
+        import boto.ec2
+        import boto.vpc
+        
+        resStartList = []
+        
+        self.showInitialMsg()
+        ObjCustomer = clsCustomer(kCustomer)
+
+        self.printMsg ("","Connecting ...")
+        self.__awsConnection = boto.ec2.connect_to_region(
+            ObjCustomer.Region,
+            aws_access_key_id=ObjCustomer.Access_key,
+            aws_secret_access_key=ObjCustomer.Secret_key)
+        self.printMsg ("","---> " + "Connected")
+
+        self.printMsg ("","Getting schedule details...")
+        reservations = self.__awsConnection.get_all_reservations()
+        
+        for res in reservations:
+            for instance in res.instances:
+
+                # Check if the instance has both of the required tang + the flag to enable scheduling
+                if instance.tags.get('bombo_autosched:ENABLE') and instance.tags.get('bombo_autosched:SCHEDULE') and instance.tags.get('bombo_autosched:ENABLE').upper() == "Y" : 
+                    ApplySchedule = "Y"
+                else:
+                    ApplySchedule = "N"
+                
+                if ApplySchedule == "Y":
+                    # The Schedule wants to be applied. Extract the timerange and power on/off
+                    try:
+                        schedValues = instance.tags.get('bombo_autosched:SCHEDULE').split(",")
+                        start       = schedValues[0].split("-")[0].replace(":"," ")
+                        end         = schedValues[0].split("-")[1].replace(":"," ")
+                        day         = int(schedValues[1])
+                        
+                        # Check if the current time + day of week is inside the bombo_autosched:SCHEDULE range
+                        if date.isoweekday(date.today()) <= day and start <= time.strftime("%H %M",time.localtime()) < end :
+                            # It is inside the working schedule range, power it up if it is shutdown
+                            if instance.state == "stopped" :
+                                self.printMsg ("","Starting instance "+ instance.id)
+                                reservation = self.__awsConnection.start_instances(instance.id)
+                                
+                                #Adding reservation to list
+                                resStartList.append(res)
+                                
+                        else:
+                            # It is currently outside of the scheduled working hours, shut it down if it is running
+                            if instance.state == "running" : 
+                                self.printMsg ("","Stopping instance "+ instance.id)
+                                self.__awsConnection.stop_instances(instance.id)
+
+                    # Capture an error if bombo_autosched:SCHEDULE  isn't formatted correctly
+                    except IndexError:
+                        self.printMsg ("","---> Error with the tag bombo_autosched:SCHEDULE (expecting hh:mm-hh:mm,<num>), found:   " + instance.tags.get('bombo_autosched:SCHEDULE') + " on instance: " + instance.id )
+  
+  
+                # tag all the instances with the Auto Scheduling tags
+                #if not instance.tags.get('bombo_autosched:ENABLE') or not instance.tags.get('bombo_autosched:SCHEDULE'):
+                #    if not instance.tags.get('bombo_autosched:ENABLE') : 
+                #        self.__awsConnection.create_tags([instance.id], {"bombo_autosched:ENABLE": "N"})
+                #    if not instance.tags.get('bombo_autosched:SCHEDULE'):
+                #        self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "08:00-20:00,5"})
+                    
+                
+        #Check launch status
+        for res in resStartList:
+            self.__checkLaunchStatus(res,True)
+
+        self.printMsg ("","---> " + "Finished with the scheduling")

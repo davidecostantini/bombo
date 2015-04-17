@@ -31,6 +31,9 @@ def main(args):
 		kKeepInstanceOn = args[4] if len(args) == 5 else False
 		bmb.BackupInstance(args[1],args[2],args[3],kKeepInstanceOn)
 
+	elif action == "scheduling":
+		bmb.ApplyPowerSchedule(args[1])
+		
 	elif action == "version":
 		bmb.showVersion()
 
