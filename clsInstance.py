@@ -39,8 +39,6 @@ class clsInstance(clsBaseClass):
         self.loadData()
 
     def loadData(self):
-        if not BOMBO_REDIS_HOST:
-            return None
 
         values = {
             "type": "",
@@ -61,30 +59,19 @@ class clsInstance(clsBaseClass):
         }        
 
         try:
-            self.printMsg ("","[Redis] Pulling for " + self.id + " ...")
+            self.printMsg ("","Pulling instance info for " + self.id + " ...")
+            
+            self.Zone = self.__AwsInstance.placement
+            self.Vpc_id = self.__AwsInstance.vpc_id
+            self.Subnet_id = self.__AwsInstance.subnet_id
+            self.Ami = self.__AwsInstance.image_id
+            self.Private_ip = self.__AwsInstance.private_ip_address
+            self.Public_ip = self.__AwsInstance.ip_address
+            self.Private_dns = self.__AwsInstance.private_dns_name
+            self.Public_dns = self.__AwsInstance.public_dns_name
+            self.Status = self.__AwsInstance.state 
 
-            for item in self.__redisdb.getBunchValues("hashes","",values):
-                if item[0] == "type":
-                    self.Type = item[1]
-                elif item[0] == "zone":
-                    self.Zone = self.__AwsInstance.placement
-                elif item[0] == "vpc_id":
-                    self.Vpc_id = self.__AwsInstance.vpc_id
-                elif item[0] == "subnet_id":
-                    self.Subnet_id = self.__AwsInstance.subnet_id
-                elif item[0] == "ami":
-                    self.Ami = self.__AwsInstance.image_id
-                elif item[0] == "private_ip":
-                    self.Private_ip = self.__AwsInstance.private_ip_address
-                elif item[0] == "public_ip":
-                    self.Public_ip = self.__AwsInstance.ip_address
-                elif item[0] == "private_dns":
-                    self.Private_dns = self.__AwsInstance.private_dns_name
-                elif item[0] == "public_dns":
-                    self.Public_dns = self.__AwsInstance.public_dns_name
-                elif item[0] == "status":
-                    self.Status = self.__AwsInstance.state 
-
+            if BOMBO_REDIS_HOST:
                 self.Infom_dns = self.__redisdb.get("hget","","infom_dns")
 
         except Exception, e:
