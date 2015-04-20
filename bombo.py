@@ -168,36 +168,32 @@ class bombo(clsBaseClass):
 
 
         for instance in kReservation.instances:
-            self.printMsg ("",'[AWS] Assignin the tag NAME:' + kSingleLaunch.Hostname )
+            self.printMsg ("",'[AWS] Assigning the tag NAME:' + kSingleLaunch.Hostname )
             self.__awsConnection.create_tags([instance.id], {"NAME":kSingleLaunch.Hostname})
             self.printMsg ("",'---> DONE' )
 
-            self.printMsg ("",'[AWS] Assignin the tag HOSTNAME:' + kSingleLaunch.Hostname )
+            self.printMsg ("",'[AWS] Assigning the tag HOSTNAME:' + kSingleLaunch.Hostname )
             self.__awsConnection.create_tags([instance.id], {"HOSTNAME":kSingleLaunch.Hostname})
             self.printMsg ("",'---> DONE' )
 
-            self.printMsg ("",'[AWS] Assignin the tag ENVIRONMENT:' + kSingleLaunch.Env )
+            self.printMsg ("",'[AWS] Assigning the tag ENVIRONMENT:' + kSingleLaunch.Env )
             self.__awsConnection.create_tags([instance.id], {"ENVIRONMENT":kSingleLaunch.Env})
             self.printMsg ("",'---> DONE' )
 
-            self.printMsg ("",'[AWS] Assignin the tag DESC:' + kSingleLaunch.Desc )
+            self.printMsg ("",'[AWS] Assigning the tag DESC:' + kSingleLaunch.Desc )
             self.__awsConnection.create_tags([instance.id], {"DESC":kSingleLaunch.Desc})
             self.printMsg ("",'---> DONE' )
 
-            self.printMsg ("",'[AWS] Assignin the tag PUPPET_ROLES:' + str(kSingleLaunch.Template.PuppetRoles))
+            self.printMsg ("",'[AWS] Assigning the tag PUPPET_ROLES:' + str(kSingleLaunch.Template.PuppetRoles))
             self.__awsConnection.create_tags([instance.id], {"PUPPET_ROLES": str(kSingleLaunch.Template.PuppetRoles)})
             self.printMsg ("",'---> DONE' )
 
-            self.printMsg ("",'[AWS] Assignin the tag LAUNCH: Launched with BOMBO ver. ' + BOMBO_VERSION)
+            self.printMsg ("",'[AWS] Assigning the tag LAUNCH: Launched with BOMBO ver. ' + BOMBO_VERSION)
             self.__awsConnection.create_tags([instance.id], {"BOMBO": str(BOMBO_VERSION)})
             self.printMsg ("",'---> DONE' )
             
-            self.printMsg ("",'[AWS] Assignin the tag bombo_autosched:ENABLE' )
-            self.__awsConnection.create_tags([instance.id], {"bombo_autosched:ENABLE": "N"})
-            self.printMsg ("",'---> DONE' )
-            
-            self.printMsg ("",'[AWS] Assignin the tag bombo_autosched:SCHEDULE' )
-            self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "08:00-20:00,5"})
+            self.printMsg ("",'[AWS] Assigning the tag bombo_autosched:SCHEDULE' )
+            self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5"})
             self.printMsg ("",'---> DONE' )
 
     def searchSimilarAMI(self,kAwsConn,kInstance):
@@ -631,10 +627,10 @@ class bombo(clsBaseClass):
 
                     # Capture an error if bombo_autosched:SCHEDULE  isn't formatted correctly
                     except IndexError:
-                        self.printMsg ("","---> Error with the tag bombo_autosched:SCHEDULE (expecting hh:mm-hh:mm,<num>), found:   " + instance.tags.get('bombo_autosched:SCHEDULE') + " on instance: " + instance.id )
+                        self.printMsg ("","---> Error with the tag bombo_autosched:SCHEDULE (expecting <Y/N>,hh:mm-hh:mm,<num>), found:   " + instance.tags.get('bombo_autosched:SCHEDULE') + " on instance: " + instance.id )
   
   
-                # tag all the instances with the Auto Scheduling tags
+                # tag all the instances with the Auto Scheduling tags if it does not already exist, but set it to be ignored.
                 #if not instance.tags.get('bombo_autosched:SCHEDULE'):
                 #    self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5"})
                     
