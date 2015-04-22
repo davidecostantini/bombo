@@ -12,6 +12,11 @@ class clsBaseClass():
             return False
         return True
 
+    def spinning_cursor(self):
+        while True:
+            for cursor in '|/-\\':
+                yield cursor
+
     def getHostname(self):
         from socket import gethostname
         return gethostname()

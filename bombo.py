@@ -8,6 +8,8 @@ from clsDNSRecord import *
 from clsVolume import *
 from clsTemplate import *
 from clsSingleLaunch import *
+from clsScheduling import *
+from clsInstanceSched import *
 
 BOMBO_VERSION="1.1"
 
@@ -134,7 +136,7 @@ class bombo(clsBaseClass):
     def __checkLaunchStatus(self,kReservation,kEssentialInfo=False):
         import time, sys
         counter = 0
-        spinner = self.__spinning_cursor()
+        spinner = self.spinning_cursor()
         instancesReady = []
         while counter != len(kReservation.instances):
 
@@ -156,11 +158,6 @@ class bombo(clsBaseClass):
                 self.printMsg ("","---> Private IP: " + instance.private_ip_address)
                 self.printMsg ("","---> Private DNS: " + instance.private_dns_name)
                 self.printMsg ("","#####################################################")
-
-    def __spinning_cursor(self):
-        while True:
-            for cursor in '|/-\\':
-                yield cursor
 
     def __setTag(self,kSingleLaunch,kLaunchConfig,kReservation):
         import boto.ec2
@@ -254,7 +251,7 @@ class bombo(clsBaseClass):
             self.printMsg ("","Stopping the instance...")
             instances_to_stop = self.__awsConnection.stop_instances(instance_ids=kInstanceId)
             counter = 0
-            spinner = self.__spinning_cursor()
+            spinner = self.spinning_cursor()
             while counter != len(instances_to_stop):
                 sys.stdout.write(spinner.next())
                 sys.stdout.flush()
@@ -301,7 +298,7 @@ class bombo(clsBaseClass):
         counter = 0
         progress = 0
         singleValue = ""
-        spinner = self.__spinning_cursor()
+        spinner = self.spinning_cursor()
         while progress < (100 * len(VolumesSnapshotMatchList)):
             progress = 0
             for VolumesSnapshotMatch in VolumesSnapshotMatchList:
@@ -357,7 +354,7 @@ class bombo(clsBaseClass):
         )
 
         counter = 0
-        spinner = self.__spinning_cursor()
+        spinner = self.spinning_cursor()
         while counter != len(reservation.instances):
             sys.stdout.write(spinner.next())
             sys.stdout.flush()
@@ -388,7 +385,7 @@ class bombo(clsBaseClass):
             instance_ids=reservation.instances[0].id,
             force=True)
         counter = 0
-        spinner = self.__spinning_cursor()
+        spinner = self.spinning_cursor()
         while counter != len(reservation.instances):
             sys.stdout.write(spinner.next())
             sys.stdout.flush()
@@ -413,7 +410,7 @@ class bombo(clsBaseClass):
             self.printMsg ("","---> " + str(new_instance_vol.id) + " and now deleted!")
 
         counter = 0
-        spinner = self.__spinning_cursor()
+        spinner = self.spinning_cursor()
         while counter < len(new_instance_vols):
             sys.stdout.write(spinner.next())
             sys.stdout.flush()
@@ -473,7 +470,7 @@ class bombo(clsBaseClass):
             self.printMsg ("","Stopping the instance...")
             instances_to_stop = self.__awsConnection.stop_instances(instance_ids=kInstanceId)
             counter = 0
-            spinner = self.__spinning_cursor()
+            spinner = self.spinning_cursor()
             while counter != len(instances_to_stop):
                 sys.stdout.write(spinner.next())
                 sys.stdout.flush()
@@ -514,7 +511,7 @@ class bombo(clsBaseClass):
         counter = 0
         progress = 0
         singleValue = ""
-        spinner = self.__spinning_cursor()
+        spinner = self.spinning_cursor()
         while progress < (100 * len(VolumesSnapshotMatchList)):
             progress = 0
             for VolumesSnapshotMatch in VolumesSnapshotMatchList:
@@ -576,7 +573,9 @@ class bombo(clsBaseClass):
         import boto.ec2
         import boto.vpc
         
-        resStartList = []
+        fullInstancesSchedList = []
+        taskInstancesSchedListStartup = []
+        taskInstancesSchedListStop = []
         
         self.showInitialMsg()
         ObjCustomer = clsCustomer(kCustomer)
@@ -589,54 +588,76 @@ class bombo(clsBaseClass):
         self.printMsg ("","---> " + "Connected")
 
         self.printMsg ("","Getting schedule details...")
-        reservations = self.__awsConnection.get_all_reservations()
-        
-        for res in reservations:
-            for instance in res.instances:
+        #reservations = self.__awsConnection.get_all_reservations()        
+        instances = [i for r in self.__awsConnection.get_all_reservations()  for i in r.instances]
 
-                # Check if the instance has both of the required tang + the flag to enable scheduling
-                if instance.tags.get('bombo_autosched:SCHEDULE') : 
-                    ApplySchedule = instance.tags.get('bombo_autosched:SCHEDULE').split(",")[0].upper()
-                else:
-                    ApplySchedule = "N"
-                
-                if ApplySchedule == "Y":
-                    # The Schedule wants to be applied. Extract the timerange and power on/off
-                    try:
-                        schedValues = instance.tags.get('bombo_autosched:SCHEDULE').split(",")
-                        apply       = schedValues[0]
-                        start       = schedValues[1].split("-")[0].replace(":"," ")
-                        end         = schedValues[1].split("-")[1].replace(":"," ")
-                        day         = int(schedValues[2])
-                        
-                        # Check if the current time + day of week is inside the bombo_autosched:SCHEDULE range
-                        if date.isoweekday(date.today()) <= day and start <= time.strftime("%H %M",time.localtime()) < end :
-                            # It is inside the working schedule range, power it up if it is shutdown
-                            if instance.state == "stopped" :
-                                self.printMsg ("","Starting instance "+ instance.id)
-                                reservation = self.__awsConnection.start_instances(instance.id)
-                                
-                                #Adding reservation to list
-                                resStartList.append(res)
-                                
-                        else:
-                            # It is currently outside of the scheduled working hours, shut it down if it is running
-                            if instance.state == "running" : 
-                                self.printMsg ("","Stopping instance "+ instance.id)
-                                self.__awsConnection.stop_instances(instance.id)
+        for instance in instances:
 
-                    # Capture an error if bombo_autosched:SCHEDULE  isn't formatted correctly
-                    except IndexError:
-                        self.printMsg ("","---> Error with the tag bombo_autosched:SCHEDULE (expecting <Y/N>,hh:mm-hh:mm,<num>), found:   " + instance.tags.get('bombo_autosched:SCHEDULE') + " on instance: " + instance.id )
-  
-  
-                # tag all the instances with the Auto Scheduling tags if it does not already exist, but set it to be ignored.
-                #if not instance.tags.get('bombo_autosched:SCHEDULE'):
-                #    self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5"})
-                    
-                
-        #Check launch status
-        for res in resStartList:
-            self.__checkLaunchStatus(res,True)
+            ObjInstanceSched = clsInstanceSched()
 
-        self.printMsg ("","---> " + "Finished with the scheduling")
+            # Check if the instance has both of the required tang + the flag to enable scheduling
+            schedValues=""
+            if instance.tags.get('bombo_autosched:SCHEDULE') : 
+                schedValues                      = instance.tags.get('bombo_autosched:SCHEDULE').upper().split(",")
+                ObjInstanceSched.start           = schedValues[1].split("-")[0].replace(":"," ")
+                ObjInstanceSched.end             = schedValues[1].split("-")[1].replace(":"," ")
+                ObjInstanceSched.day             = int(schedValues[2])
+                ObjInstanceSched.schedEnabled    = (True if schedValues[0] == "Y" else False)
+
+            #Adding instance even if SCHEDULING is not enabled
+            ObjInstanceSched.instance            = instance
+            
+            #Populating full Instances list with Scheduling option info
+            fullInstancesSchedList.append(ObjInstanceSched)
+            
+            if ObjInstanceSched.schedEnabled:
+                # The Schedule wants to be applied. Extract the timerange and power on/off
+                try:
+                    # Check if the current time + day of week is inside the bombo_autosched:SCHEDULE range
+                    if date.isoweekday(date.today()) <= ObjInstanceSched.day and ObjInstanceSched.start <= time.strftime("%H %M",time.localtime()) < ObjInstanceSched.end :
+                        # It is inside the working schedule range, power it up if it is shutdown
+                        if instance.state == "stopped" :                            
+                            #Adding reservation to list
+                            taskInstancesSchedListStartup.append(ObjInstanceSched)
+                            
+                    else:
+                        # It is currently outside of the scheduled working hours, shut it down if it is running
+                        if instance.state == "running" : 
+                            taskInstancesSchedListStop.append(ObjInstanceSched)
+
+                # Capture an error if bombo_autosched:SCHEDULE  isn't formatted correctly
+                except IndexError:
+                    self.printMsg ("","###> Error with the tag bombo_autosched:SCHEDULE (expecting <Y/N>,hh:mm-hh:mm,<days>), found:   " + instance.tags.get('bombo_autosched:SCHEDULE') + " on instance: " + instance.id )
+
+
+            # tag all the instances with the Auto Scheduling tags if it does not already exist, but set it to be ignored.
+            #if not instance.tags.get('bombo_autosched:SCHEDULE'):
+            #    self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5"})
+
+        ObjScheduling = clsScheduling()
+
+        listToStartInstances=[]
+        listToStart=ObjScheduling.getScheduledListStartup(taskInstancesSchedListStartup,fullInstancesSchedList)
+        self.printMsg ("","Found " + str(len(listToStart)) + " instances to startup!")
+        for i in listToStart:
+            self.printMsg ("","Starting instance [" +  i.instance.id + "]")
+            tmpInstance=self.__awsConnection.start_instances(i.instance.id)
+
+            self.printMsg ("","Waiting for the instance to be up and running")
+            ObjScheduling.checkSchedInstanceState(tmpInstance[0])
+
+            listToStartInstances.append(tmpInstance)
+
+        listToStopInstances=[]
+        listToStop=ObjScheduling.getScheduledListStop(taskInstancesSchedListStop,fullInstancesSchedList)
+        self.printMsg ("","Found " + str(len(listToStop)) + " instances to stop!")
+        for i in listToStop:
+            self.printMsg ("","Stopping instance [" +  i.instance.id + "]")
+            tmpInstance=self.__awsConnection.stop_instances(i.instance.id)
+
+            self.printMsg ("","Waiting for the instance to be stopped")
+            ObjScheduling.checkSchedInstanceState(tmpInstance[0])
+
+            listToStopInstances.append(tmpInstance)
+
+        self.printMsg ("","Finished with the scheduling")
