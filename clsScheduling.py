@@ -77,7 +77,7 @@ class clsScheduling(clsBaseClass):
                     checkLoop = self.__checkInfiniteLoop(Deps,TmpList)
                     if checkLoop:
                         print "Infinite loop error!"
-                        sys.exit()
+                        sys.exit(1)
 
                 if Deps != None:
                     _Level+=1

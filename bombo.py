@@ -636,9 +636,8 @@ class bombo(clsBaseClass):
 
         ObjScheduling = clsScheduling()
 
-        listToStartInstances=[]
         listToStart=ObjScheduling.getScheduledListStartup(taskInstancesSchedListStartup,fullInstancesSchedList)
-        self.printMsg ("","Found " + str(len(listToStart)) + " instances to startup!")
+        self.printMsg ("","Found " + str(len(listToStart)) + " instances to start!")
         for i in listToStart:
             self.printMsg ("","Starting instance [" +  i.instance.id + "]")
             tmpInstance=self.__awsConnection.start_instances(i.instance.id)
@@ -646,9 +645,6 @@ class bombo(clsBaseClass):
             self.printMsg ("","Waiting for the instance to be up and running")
             ObjScheduling.checkSchedInstanceState(tmpInstance[0])
 
-            listToStartInstances.append(tmpInstance)
-
-        listToStopInstances=[]
         listToStop=ObjScheduling.getScheduledListStop(taskInstancesSchedListStop,fullInstancesSchedList)
         self.printMsg ("","Found " + str(len(listToStop)) + " instances to stop!")
         for i in listToStop:
@@ -658,6 +654,4 @@ class bombo(clsBaseClass):
             self.printMsg ("","Waiting for the instance to be stopped")
             ObjScheduling.checkSchedInstanceState(tmpInstance[0])
 
-            listToStopInstances.append(tmpInstance)
-
-        self.printMsg ("","Finished with the scheduling")
+        self.printMsg ("","--->Finished with the scheduling")
