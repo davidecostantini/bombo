@@ -603,6 +603,8 @@ class bombo(clsBaseClass):
                 ObjInstanceSched.end             = schedValues[1].split("-")[1].replace(":"," ")
                 ObjInstanceSched.day             = int(schedValues[2])
                 ObjInstanceSched.schedEnabled    = (True if schedValues[0] == "Y" else False)
+                ObjInstanceSched.deps            = str(instance.tags.get('bombo_autosched:DEPS'))
+
 
             #Adding instance even if SCHEDULING is not enabled
             ObjInstanceSched.instance            = instance
@@ -642,8 +644,9 @@ class bombo(clsBaseClass):
             self.printMsg ("","Starting instance [" +  i.instance.id + "]")
             tmpInstance=self.__awsConnection.start_instances(i.instance.id)
 
-            self.printMsg ("","Waiting for the instance to be up and running")
-            ObjScheduling.checkSchedInstanceState(tmpInstance[0])
+            if i.isADeps:
+                self.printMsg ("","This instance is a depenency, so I'm waiting for the instance to be up and running")
+                ObjScheduling.checkSchedInstanceState(tmpInstance[0])
 
         listToStop=ObjScheduling.getScheduledListStop(taskInstancesSchedListStop,fullInstancesSchedList)
         self.printMsg ("","Found " + str(len(listToStop)) + " instances to stop!")

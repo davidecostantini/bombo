@@ -32,6 +32,10 @@ class clsScheduling(clsBaseClass):
         for i in reversed(kTmpList):
             if self.__getSched(i.instance.id,kMainList).instance == None:
                 Tmp.append(i)
+            else:
+                #if here the instance is already added to list
+                #but is required by other instances ergo is a deps
+                i.isADeps=True
         return kMainList+Tmp
 
     def checkSchedInstanceState(self,kInstance):
@@ -71,6 +75,8 @@ class clsScheduling(clsBaseClass):
             _Level=0
             while Done == False:
                 Deps = self.__getDeps(tmpSched)
+                #Deps = sched.deps
+                print "deps:"+sched.deps
                 tmpSched=self.__getSched(Deps,kFullInstancesSchedList)
 
                 if tmpSched.schedEnabled:
@@ -84,6 +90,8 @@ class clsScheduling(clsBaseClass):
 
                     if tmpSched.instance != None:
                         if tmpSched.schedEnabled:
+                            if _Level>0:
+                                tmpSched.isADeps=True
                             TmpList.append(tmpSched)
                         else:
                             #I have a deps that has not the automated scheduled so I have to check if it is running
