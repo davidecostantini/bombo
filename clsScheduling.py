@@ -76,7 +76,7 @@ class clsScheduling(clsBaseClass):
             while Done == False:
                 Deps = self.__getDeps(tmpSched)
                 #Deps = sched.deps
-                print "deps:"+sched.deps
+                #print "deps:"+sched.deps
                 tmpSched=self.__getSched(Deps,kFullInstancesSchedList)
 
                 if tmpSched.schedEnabled:

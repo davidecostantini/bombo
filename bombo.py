@@ -371,11 +371,11 @@ class bombo(clsBaseClass):
         self.__awsConnection.create_tags([instance.id], {"bombo_moving:SOURCE_INSTANCE":kInstanceId})
         self.__awsConnection.create_tags([instance.id], {"bombo_moving:DATE":datetime.today().strftime('%d-%m-%Y %H:%M:%S')})
         
-        self.printMsg ("","Extracting tags from source instance...")
-        TagsList = self.getTagsFromInstance(kInstanceId)
+       # self.printMsg ("","Extracting tags from source instance...")
+       # TagsList = self.getTagsFromInstance(kInstanceId)
        
-        self.printMsg ("","Applying tags to the new instance...")
-        self.setTagsToInstance(TagsList, instance.id)
+       # self.printMsg ("","Applying tags to the new instance...")
+       # self.setTagsToInstance(TagsList, instance.id)
 
         self.printMsg ("","---> New instance tagged...")
 
