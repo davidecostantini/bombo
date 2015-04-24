@@ -1,1 +1,0 @@
-/etc/data/git_update/git_update.sh
