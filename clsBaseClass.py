@@ -26,7 +26,7 @@ class clsBaseClass():
         return str(datetime.date.today()) + "_" + str(datetime.datetime.time(datetime.datetime.now()))
 
     def printUsage(self):
-        with open('usage.txt', 'r') as f:
+        with open('/usr/local/bombo/usage.txt', 'r') as f:
             print f.read()
         f.closed
 
@@ -43,7 +43,7 @@ class clsBaseClass():
             print bcolors.FAIL + "| | |_________|  | || | |____| |___| | || | |____| |___| | || |   `.____.'   | || | |____| |___| | |" + bcolors.ENDC
             print bcolors.FAIL + "| |              | || |              | || |              | || |              | || |              | |" + bcolors.ENDC
             print bcolors.FAIL + "| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |" + bcolors.ENDC
-            print bcolors.FAIL + "'----------------'  '----------------'  '----------------'  '----------------'  '----------------'" + bcolors.ENDC
+            print bcolors.FAIL + "'----------------'  '----------------'  '----------------'  '----------------'  '------------------'" + bcolors.ENDC
             print bcolors.FAIL + "[" + kMsgCod + "] -> " + kMsgDesc + bcolors.ENDC
             if kQuit:
                 sys.exit(1)
