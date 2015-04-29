@@ -217,6 +217,7 @@ class bombo(clsBaseClass):
         import sys, time
         import boto.ec2
         import boto.vpc
+        AWSMaxTagsNumber = 10
 
         self.showInitialMsg()
 
@@ -342,6 +343,7 @@ class bombo(clsBaseClass):
             self.printMsg ("","###> AMI NOT Available, searching for a similar AMI [" + instance.architecture +" - " + instance.virtualization_type +" - " + instance.hypervisor +" - " + instance.root_device_type + "]")
             ObjInstance.Ami = self.searchSimilarAMI(self.__awsConnection,instance)
 
+        time.sleep(2)
         self.printMsg ("","Launching new instance on " + kSubnet + "...")
         reservation = self.__awsConnection.run_instances(
             image_id = ObjInstance.Ami,
@@ -368,14 +370,18 @@ class bombo(clsBaseClass):
         self.printMsg ("","---> [" + reservation.instances[0].id + "] => Instance launched")
 
         self.printMsg ("","Tagging new instance...")
-        self.__awsConnection.create_tags([instance.id], {"bombo_moving:SOURCE_INSTANCE":kInstanceId})
-        self.__awsConnection.create_tags([instance.id], {"bombo_moving:DATE":datetime.today().strftime('%d-%m-%Y %H:%M:%S')})
         
-       # self.printMsg ("","Extracting tags from source instance...")
-       # TagsList = self.getTagsFromInstance(kInstanceId)
+
+        # If the instance has 2 tags below the Amazon limit
+        if len(self.getTagsFromInstance(instance.id)) < AWSMaxTagsNumber-1:
+            self.__awsConnection.create_tags([instance.id], {"bombo_moving:SOURCE_INSTANCE":kInstanceId})
+            self.__awsConnection.create_tags([instance.id], {"bombo_moving:DATE":datetime.today().strftime('%d-%m-%Y %H:%M:%S')})
+        
+        self.printMsg ("","Extracting tags from source instance...")
+        TagsList = self.getTagsFromInstance(kInstanceId)
        
-       # self.printMsg ("","Applying tags to the new instance...")
-       # self.setTagsToInstance(TagsList, instance.id)
+        self.printMsg ("","Applying tags to the new instance...")
+        self.setTagsToInstance(TagsList, instance.id, AWSMaxTagsNumber)
 
         self.printMsg ("","---> New instance tagged...")
 
@@ -541,31 +547,30 @@ class bombo(clsBaseClass):
             self.printMsg ("","---> " + "bombo_backup:DEVICE " + vol.attach_data.device)
 
         self.printMsg ("","Hopefully everything went well......")
-
-        
-        
-        
-        
+      
         
     def getTagsFromInstance (self,kInstanceId):
         #Returns a dictionary containing all of the tags from the supplied instance ID
-        #TagsList = {}
         reservations = self.__awsConnection.get_all_instances(kInstanceId)
-        
-        #for tag in reservations[0].instances[0].tags:
-        #    TagsList[tag] = reservations[0].instances[0].tags.get(tag)
-        #return TagsList
-        
         return reservations[0].instances[0].tags
     
-    def setTagsToInstance(self, TagsList,kInstanceId):
+    def setTagsToInstance(self, TagsList,kInstanceId,AWSMaxTagsNumber):
+        #Sets a dictionary of tags to an instance (until the AWS maximum limit has been reached)
         reservations = self.__awsConnection.get_all_instances(kInstanceId)
         instance = reservations[0].instances[0]
+        counter = len(instance.tags)
         
         for tag in TagsList:
-            if not instance.tags.get(tag):
+            if not instance.tags.get(tag) and counter < AWSMaxTagsNumber:
                 self.printMsg ("","Adding TAG:" + tag)
                 self.__awsConnection.create_tags([kInstanceId], {tag:TagsList[tag]})
+                counter += 1
+            else:
+                self.printMsg ("","Unable to add TAG:"+ tag)
+                if instance.tags.get(tag):
+                    self.printMsg ("","Tag already attached")
+                else:
+                    self.printMsg ("","Limit exceeded. Number of tags already attached:"+ str(counter))
 
     def ApplyPowerSchedule(self,kCustomer):
         from datetime import datetime, date
