@@ -13,8 +13,11 @@ def checkParams(kArgs,kExpected):
 		__paramsError()
 
 def main(args):
+	import datetime
 	bmb = bombo.bombo()
 	action = args[0]
+
+	bmb.printMsg('','Starting - ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M %S,%f"))
 
 	if action == "run":
 		checkParams(args,{2})
@@ -43,6 +46,8 @@ def main(args):
 
 	else:
 		bmb.printMsg("CLI","Command '" + action + "' not found",True,True,True)
+
+	bmb.printMsg('','Finish - ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M %S,%f"))
 
 
 if __name__ == "__main__":

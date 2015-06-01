@@ -151,7 +151,7 @@ class bombo(clsBaseClass):
         for instance in kReservation.instances:
             self.printMsg ("","#####################################################")
             self.printMsg ("","[BOMBO] Hey mate, instance " + str(instance.id) + " is now ready to be messed by you....")
-            
+
             if not kEssentialInfo:
                 if (instance.public_dns_name != ""):
                     self.printMsg ("","---> Public DNS: " + instance.public_dns_name)
@@ -188,7 +188,7 @@ class bombo(clsBaseClass):
             self.printMsg ("",'[AWS] Assigning the tag LAUNCH: Launched with BOMBO ver. ' + BOMBO_VERSION)
             self.__awsConnection.create_tags([instance.id], {"BOMBO": str(BOMBO_VERSION)})
             self.printMsg ("",'---> DONE' )
-            
+
             self.printMsg ("",'[AWS] Assigning the tag bombo_autosched:SCHEDULE' )
             self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5"})
             self.printMsg ("",'---> DONE' )
@@ -275,8 +275,8 @@ class bombo(clsBaseClass):
         #TagsList = []
         #TagsList = setTagsToInstance([instance.id])
         #self.printMsg ("","Finished copying tags")
-        
-        
+
+
         VolumesSnapshotMatchList = []
 
         for vol in vols:
@@ -370,10 +370,10 @@ class bombo(clsBaseClass):
         self.printMsg ("","Tagging new instance...")
         self.__awsConnection.create_tags([instance.id], {"bombo_moving:SOURCE_INSTANCE":kInstanceId})
         self.__awsConnection.create_tags([instance.id], {"bombo_moving:DATE":datetime.today().strftime('%d-%m-%Y %H:%M:%S')})
-        
+
        # self.printMsg ("","Extracting tags from source instance...")
        # TagsList = self.getTagsFromInstance(kInstanceId)
-       
+
        # self.printMsg ("","Applying tags to the new instance...")
        # self.setTagsToInstance(TagsList, instance.id)
 
@@ -542,26 +542,26 @@ class bombo(clsBaseClass):
 
         self.printMsg ("","Hopefully everything went well......")
 
-        
-        
-        
-        
-        
+
+
+
+
+
     def getTagsFromInstance (self,kInstanceId):
         #Returns a dictionary containing all of the tags from the supplied instance ID
         #TagsList = {}
         reservations = self.__awsConnection.get_all_instances(kInstanceId)
-        
+
         #for tag in reservations[0].instances[0].tags:
         #    TagsList[tag] = reservations[0].instances[0].tags.get(tag)
         #return TagsList
-        
+
         return reservations[0].instances[0].tags
-    
+
     def setTagsToInstance(self, TagsList,kInstanceId):
         reservations = self.__awsConnection.get_all_instances(kInstanceId)
         instance = reservations[0].instances[0]
-        
+
         for tag in TagsList:
             if not instance.tags.get(tag):
                 self.printMsg ("","Adding TAG:" + tag)
@@ -572,11 +572,11 @@ class bombo(clsBaseClass):
         import sys, time, string
         import boto.ec2
         import boto.vpc
-        
+
         fullInstancesSchedList = []
         taskInstancesSchedListStartup = []
         taskInstancesSchedListStop = []
-        
+
         self.showInitialMsg()
         ObjCustomer = clsCustomer(kCustomer)
 
@@ -588,7 +588,7 @@ class bombo(clsBaseClass):
         self.printMsg ("","---> " + "Connected")
 
         self.printMsg ("","Getting schedule details...")
-        #reservations = self.__awsConnection.get_all_reservations()        
+        #reservations = self.__awsConnection.get_all_reservations()
         instances = [i for r in self.__awsConnection.get_all_reservations()  for i in r.instances]
 
         for instance in instances:
@@ -597,7 +597,7 @@ class bombo(clsBaseClass):
 
             # Check if the instance has both of the required tang + the flag to enable scheduling
             schedValues=""
-            if instance.tags.get('bombo_autosched:SCHEDULE') : 
+            if instance.tags.get('bombo_autosched:SCHEDULE') :
                 schedValues                      = instance.tags.get('bombo_autosched:SCHEDULE').upper().split(",")
                 ObjInstanceSched.start           = schedValues[1].split("-")[0].replace(":"," ")
                 ObjInstanceSched.end             = schedValues[1].split("-")[1].replace(":"," ")
@@ -608,23 +608,23 @@ class bombo(clsBaseClass):
 
             #Adding instance even if SCHEDULING is not enabled
             ObjInstanceSched.instance            = instance
-            
+
             #Populating full Instances list with Scheduling option info
             fullInstancesSchedList.append(ObjInstanceSched)
-            
+
             if ObjInstanceSched.schedEnabled:
                 # The Schedule wants to be applied. Extract the timerange and power on/off
                 try:
                     # Check if the current time + day of week is inside the bombo_autosched:SCHEDULE range
                     if date.isoweekday(date.today()) <= ObjInstanceSched.day and ObjInstanceSched.start <= time.strftime("%H %M",time.localtime()) < ObjInstanceSched.end :
                         # It is inside the working schedule range, power it up if it is shutdown
-                        if instance.state == "stopped" :                            
+                        if instance.state == "stopped" :
                             #Adding reservation to list
                             taskInstancesSchedListStartup.append(ObjInstanceSched)
-                            
+
                     else:
                         # It is currently outside of the scheduled working hours, shut it down if it is running
-                        if instance.state == "running" : 
+                        if instance.state == "running" :
                             taskInstancesSchedListStop.append(ObjInstanceSched)
 
                 # Capture an error if bombo_autosched:SCHEDULE  isn't formatted correctly
