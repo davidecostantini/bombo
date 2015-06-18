@@ -2,7 +2,7 @@
     "1": {
         "name": "Customer Name",
         "settings": {
-            "dns_domain": "route53.domain.com",
+            "dns_domain": "",
             "region": "eu-west-1",
             "access_key": "",
             "secret_key": "",
