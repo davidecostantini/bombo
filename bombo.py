@@ -166,7 +166,7 @@ class bombo(clsBaseClass):
 
         for instance in kReservation.instances:
             self.printMsg ("",'[AWS] Assigning the tag NAME:' + kSingleLaunch.Hostname )
-            self.__awsConnection.create_tags([instance.id], {"NAME":kSingleLaunch.Hostname})
+            self.__awsConnection.create_tags([instance.id], {"Name":kSingleLaunch.Hostname})
             self.printMsg ("",'---> DONE' )
 
             self.printMsg ("",'[AWS] Assigning the tag HOSTNAME:' + kSingleLaunch.Hostname )
@@ -190,7 +190,7 @@ class bombo(clsBaseClass):
             self.printMsg ("",'---> DONE' )
 
             self.printMsg ("",'[AWS] Assigning the tag bombo_autosched:SCHEDULE' )
-            self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5"})
+            self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5,N,08:00-20:00,5,A"})
             self.printMsg ("",'---> DONE' )
 
     def searchSimilarAMI(self,kAwsConn,kInstance):
