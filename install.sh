@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 print_msg() {
   case $1 in
       "red" )
@@ -36,6 +36,30 @@ if [ -d "$INST_DIR" ]; then
 fi
 
 CURR_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+
+print_msg "cyan" "Identifying OS..."
+if [ -f /etc/debian_version ]; then
+   OS=Debian
+   VER=$(cat /etc/debian_version)
+elif [ -f /etc/redhat-release ]; then
+   OS=RedHat
+   VER=$(cat /etc/debian_version)
+fi;
+print_msg "cyan" "OS $OS Version $VER"
+
+
+print_msg "cyan" "Install pip for $OS"
+if [ "$OS" == "Debian" ]; then
+    sudo apt-get install -y python-pip
+    sudo pip install --upgrade pip
+elif [ "$OS" == "RedHat" ]; then
+    yum -y install python-pip
+fi;
+
+
+print_msg "cyan" "Installing dependencies"
+pip install redis boto
 
 print_msg "cyan" "Copying files to $INST_DIR"
 cp -R $CURR_DIR $INST_DIR
