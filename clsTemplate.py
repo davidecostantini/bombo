@@ -9,7 +9,7 @@ class clsTemplate(clsBaseClass):
     InstanceType = ""
     BootScript = ""
     InstanceId = ""
-    PuppetRoles = ""
+    CmRoles = ""
     PreCmScript = ""
     PostCmScript = ""
 
@@ -27,7 +27,7 @@ class clsTemplate(clsBaseClass):
             self.InstanceType = self.__ObjConfig["settings"]["instance_type"]
             self.BootScript = self.__ObjConfig["settings"]["boot_script"]
             self.InstanceId = self.__ObjConfig["instance_id"]
-            self.PuppetRoles = self.__ObjConfig["puppet_roles"]
+            self.CmRoles = self.__ObjConfig["cm_roles"]
             self.PreCmScript = self.__ObjConfig["pre_cm_script"]
             self.PostCmScript = self.__ObjConfig["post_cm_script"]
 

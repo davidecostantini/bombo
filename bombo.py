@@ -11,7 +11,7 @@ from clsSingleLaunch import *
 from clsScheduling import *
 from clsInstanceSched import *
 
-BOMBO_VERSION="1.1"
+BOMBO_VERSION="2.0"
 
 class LaunchConfig(clsBaseClass):
     __ObjConfig = None
@@ -181,8 +181,8 @@ class bombo(clsBaseClass):
             self.__awsConnection.create_tags([instance.id], {"DESC":kSingleLaunch.Desc})
             self.printMsg ("",'---> DONE' )
 
-            self.printMsg ("",'[AWS] Assigning the tag PUPPET_ROLES:' + str(kSingleLaunch.Template.PuppetRoles))
-            self.__awsConnection.create_tags([instance.id], {"PUPPET_ROLES": str(kSingleLaunch.Template.PuppetRoles)})
+            self.printMsg ("",'[AWS] Assigning the tag CM_Roles:' + str(kSingleLaunch.Template.CmRoles))
+            self.__awsConnection.create_tags([instance.id], {"CM_Roles": str(kSingleLaunch.Template.CmRoles)})
             self.printMsg ("",'---> DONE' )
 
             self.printMsg ("",'[AWS] Assigning the tag LAUNCH: Launched with BOMBO ver. ' + BOMBO_VERSION)

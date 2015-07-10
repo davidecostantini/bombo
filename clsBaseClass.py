@@ -98,6 +98,7 @@ class clsBaseClass():
             instance_hostname=kSingleLaunch.Hostname + ("." + kLaunchConfig.Customer.Dns_domain if kLaunchConfig.Customer.Dns_domain != "" else ""),
             instance_id=kSingleLaunch.Template.InstanceId,
             customer_id=kLaunchConfig.Customer.id,
+            cm_roles=', '.join(kSingleLaunch.Template.CmRoles),
 
             pre_cm_script_placeholder=kSingleLaunch.Template.PreCmScript if kSingleLaunch.Template.PreCmScript else "test",
             post_cm_script_placeholder=kSingleLaunch.Template.PostCmScript if kSingleLaunch.Template.PostCmScript else "test",
