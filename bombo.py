@@ -42,11 +42,6 @@ class LaunchConfig(clsBaseClass):
 
     def __getLaunchList(self,kJsonList):
         TmpList=[]
-
-        print kJsonList
-        import sys
-        sys.exit(0)
-
         for key,value in kJsonList.iteritems():
             TmpList.append(clsSingleLaunch(value))
         return TmpList
