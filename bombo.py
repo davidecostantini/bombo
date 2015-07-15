@@ -11,7 +11,7 @@ from clsSingleLaunch import *
 from clsScheduling import *
 from clsInstanceSched import *
 
-BOMBO_VERSION="2.0"
+BOMBO_VERSION="1.3.1"
 
 class LaunchConfig(clsBaseClass):
     __ObjConfig = None
@@ -26,13 +26,15 @@ class LaunchConfig(clsBaseClass):
     def __init__(self, kLaunchConfig):
         self.__ObjConfig = self.loadJsonFile("launch/" + kLaunchConfig + ".json")
         self.__loadData()
-        self.LaunchList = self.__getLaunchList(self.__ObjConfig['launch'])
 
     def __loadData(self):
         self.__getObjCustomer(self.__ObjConfig["customer_id"])
         self.Subnet = self.__ObjConfig["subnet"]
         self.Key = self.__ObjConfig["key"]
-        self.Region = self.__ObjConfig["region"] if self.__ObjConfig["region"] else self.Customer.Region #Check if region was overloaded in the launch config
+        self.LaunchList = self.__getLaunchList(self.__ObjConfig['launch'])
+
+        #Check if region was overloaded in the launch config
+        self.Region = self.__ObjConfig["region"] if self.__ObjConfig["region"] else self.Customer.Region        
 
     def __getObjCustomer(self,kCustomerId):
         self.CustomerId = kCustomerId
@@ -40,6 +42,11 @@ class LaunchConfig(clsBaseClass):
 
     def __getLaunchList(self,kJsonList):
         TmpList=[]
+
+        print kJsonList
+        import sys
+        sys.exit(0)
+
         for key,value in kJsonList.iteritems():
             TmpList.append(clsSingleLaunch(value))
         return TmpList
