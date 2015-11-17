@@ -16,6 +16,7 @@ class clsVolume():
         self.Device = kDetail["device"]
         self.DelOnTerm = kDetail["del_on_term"]
         self.Iops = kDetail["iops"]
+        self.blockDeviceMapping = kDetail["blockDeviceMapping"]
 
     ##-----------------------------------##
     ##-----------------------------------##
