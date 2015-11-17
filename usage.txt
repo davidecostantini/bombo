@@ -4,7 +4,7 @@
  backup <customer_id> <region> <instance_id> [<keep_instance_on>]        -> Backup instance volumes
  copy <customer_id> <region> <instance_id> <subnet> [<keep_instance_on>] -> Start instance copy
  scheduling <customer_id>                                                -> Apply power schedule to each instance
- snapshow <customer_id>                                                  -> Take a snapshot and purge older copies
+ snapshot <customer_id>                                                  -> Take a snapshot and purge older copies
  version                                                                 -> Show the app version
  usage                                                                   -> Show this guide
  ------------------------
