@@ -34,7 +34,9 @@ class LaunchConfig(clsBaseClass):
         self.LaunchList = self.__getLaunchList(self.__ObjConfig['launch'])
 
         #Check if region was overloaded in the launch config
-        self.Region = self.__ObjConfig["region"] if self.__ObjConfig["region"] else self.Customer.Region        
+        self.Region = self.__ObjConfig["region"] if self.__ObjConfig["region"] else self.Customer.Region      
+
+        self.SNAPSHOT_MAX_AGE = self.__ObjConfig["SNAPSHOT_MAX_AGE"]
 
     def __getObjCustomer(self,kCustomerId):
         self.CustomerId = kCustomerId
@@ -283,7 +285,10 @@ class bombo(clsBaseClass):
 
         for vol in vols:
             self.printMsg ("","Tagging volume " + vol.id + "...")
-            vol.add_tag("Name", "### Copied ###")
+            if instance.tags.get('Name') :
+                vol.add_tag("Name", "### Copy of :" + instance.tags.get('Name') + " ###")
+            else:
+                vol.add_tag("Name", "### Copied ###")
             vol.add_tag("bombo_moving:INSTANCE", instance.id)
             vol.add_tag("bombo_moving:STATUS", vol.attach_data.status)
             vol.add_tag("bombo_moving:DEVICE", vol.attach_data.device)
@@ -462,7 +467,7 @@ class bombo(clsBaseClass):
             self.printMsg("AWS","Ops! I found problems during connection..." + str(sys.exc_info()[0]),True,True)
 
         self.printMsg ("","---> " + "Connected")
-
+        
         self.printMsg ("","Getting instance details...")
         reservations = self.__awsConnection.get_all_instances(instance_ids=[kInstanceId])
         instance = reservations[0].instances[0]
@@ -500,6 +505,11 @@ class bombo(clsBaseClass):
             vol.add_tag("bombo_backup:STATUS", vol.attach_data.status)
             vol.add_tag("bombo_backup:DEVICE", vol.attach_data.device)
             vol.add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
+            #sg commented out....changes the tags on the original volumes...no need for this imho
+            #if instance.tags.get('Name') :
+            #    vol.add_tag("Name", "### Copy of: " + instance.tags.get('Name') + " ###" )
+            #else:
+            #    vol.add_tag("Name", "### Copied ###")
 
             self.printMsg ("","Snapshot volume " + vol.id + "...")
             snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
@@ -532,10 +542,16 @@ class bombo(clsBaseClass):
 
         self.printMsg ("","Tagging Snapshots...")
         for VolumesSnapshotMatch in VolumesSnapshotMatchList:
-            VolumesSnapshotMatch[1].add_tag("Name", "### Backup ###")
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
             VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE", instance.id)
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DEVICE", vol.attach_data.device)
+            if instance.tags.get('bombo_autosched:SCHEDULE') :
+                VolumesSnapshotMatch[1].add_tag("bombo_autosched:SCHEDULE", instance.tags.get('bombo_autosched:SCHEDULE'))
+                
+            if instance.tags.get('Name') :
+                VolumesSnapshotMatch[1].add_tag("Name", "### BACKUP of :" + instance.tags.get('Name') + " ###")
+            else:
+                VolumesSnapshotMatch[1].add_tag("Name", "### BACKUP ###")
 
             self.printMsg ("","Snapshot " + str(VolumesSnapshotMatch[1].id))
             self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
@@ -568,7 +584,75 @@ class bombo(clsBaseClass):
             if not instance.tags.get(tag):
                 self.printMsg ("","Adding TAG:" + tag)
                 self.__awsConnection.create_tags([kInstanceId], {tag:TagsList[tag]})
+####################################################################
+##############################################
+    def UpdateSnapshots(self,kCustomer):
+        from datetime import datetime, date, timedelta
+        import sys, time, string
+        import boto.ec2
+        import boto.vpc
+        
+        #Set the age of snapshots to delete in days
+        maxAge = 30
+      
+        
+        ObjCustomer = clsCustomer(kCustomer)
+        self.printMsg ("","Connecting ...")
+        self.__awsConnection = boto.ec2.connect_to_region(
+            ObjCustomer.Region,
+            aws_access_key_id=ObjCustomer.Access_key,
+            aws_secret_access_key=ObjCustomer.Secret_key)
+        self.printMsg ("","---> " + "Connected")
+        
+        #
+        # Make a snapshot of each instance's volumes
+                #self.BackupInstance(kCustomer,"eu-west-1","i-7bff97da",True)
+        #Identify the region all of the instances & Backitup (which will create a snapshot)
+        instances = [i for r in self.__awsConnection.get_all_reservations()  for i in r.instances]      
+        for instance in instances:
+            region = str(instance.region).split(":")[1]
+            self.BackupInstance(kCustomer,region,instance.id,True)
+        #
+        # Purge old snapshots
+        # Snapshots have been made, now to purge the old ones
+        delete_time = datetime.utcnow() - timedelta(days=maxAge)
+        self.printMsg ("","Deleting any snapshots older than {days} days".format(days=maxAge))
 
+        snapshots = self.__awsConnection.get_all_snapshots()
+
+        deletion_counter = 0
+        size_counter = 0
+        # Counters for snapshots with no Name 
+        anon_deletion_counter = 0
+        anon_size_counter = 0
+        
+        for snapshot in snapshots:
+            if snapshot.tags.get('Name') : 
+                start_time = datetime.strptime(snapshot.start_time,'%Y-%m-%dT%H:%M:%S.000Z')
+
+                if start_time < delete_time:
+                    print ('Deleting {id}'.format(id=snapshot.id)) + " " + str(snapshot.tags)
+                    deletion_counter = deletion_counter + 1
+                    size_counter = size_counter + snapshot.volume_size
+                    # Set this to TRUE to prevent deletion
+                    snapshot.delete(dry_run=False)
+            else:
+                # The snapshot does not have a name tag. Which means it wasn't created by Bombo
+                start_time = datetime.strptime(snapshot.start_time,'%Y-%m-%dT%H:%M:%S.000Z')
+                if start_time < delete_time:
+                    anon_deletion_counter = anon_deletion_counter + 1
+                    anon_size_counter = anon_size_counter + snapshot.volume_size
+        print 'Deleted {number} snapshots totalling {size} GB'.format(number=deletion_counter,size=size_counter)
+        print 'Anonymous snapshots that could be deleted: {number} snapshots totalling {size} GB'.format(number=anon_deletion_counter,size=anon_size_counter)
+        
+        
+        self.printMsg ("","Getting volume details...")
+        instances = [i for r in self.__awsConnection.get_all_reservations()  for i in r.instances]
+
+             
+####################################################################
+##############################################       
+                
     def ApplyPowerSchedule(self,kCustomer):
         from datetime import datetime, date
         import sys, time, string

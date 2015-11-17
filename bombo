@@ -44,6 +44,9 @@ def main(args):
 	elif action == "usage":
 		bmb.printUsage()		
 
+	elif action == "snapshot":
+		bmb.UpdateSnapshots(args[1])
+
 	else:
 		bmb.printMsg("CLI","Command '" + action + "' not found",True,True,True)
 
