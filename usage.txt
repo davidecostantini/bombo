@@ -1,10 +1,9 @@
  -----USAGE MANUAL-------
  ------------------------
- run <config_name>                                                       -> Launch a config
- backup <customer_id> <region> <instance_id> [<keep_instance_on>]        -> Backup instance volumes
- copy <customer_id> <region> <instance_id> <subnet> [<keep_instance_on>] -> Start instance copy
- scheduling <customer_id>                                                -> Apply power schedule to each instance
- snapshot <customer_id>                                                  -> Take a snapshot and purge older copies
- version                                                                 -> Show the app version
- usage                                                                   -> Show this guide
+ run <config_name>                                                                              -> Launch a config
+ backup <customer_id> <region> <instance_id> [<keep_instance_on>] [<flush_old_bck_snapshots>]   -> Backup instance volumes
+ copy <customer_id> <region> <instance_id> <subnet> [<keep_instance_on>]                        -> Start instance copy
+ scheduling <customer_id>                                                                       -> Apply power schedule to each instance
+ version                                                                                        -> Show the app version
+ usage                                                                                          -> Show this guide
  ------------------------

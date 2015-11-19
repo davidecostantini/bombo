@@ -20,6 +20,7 @@ class clsCustomer(clsBaseClass):
     Puppet_ssh_pub = ""
     Dns_domain = ""
     Region = ""
+    BckVolumesRetention = 1
 
     Instances = 0 #Instance number
 
@@ -83,6 +84,7 @@ class clsCustomer(clsBaseClass):
             self.Puppet_repo = jsonCustomersList[str(self.id)]["settings"]["puppet_repo"]
             self.Access_key = jsonCustomersList[str(self.id)]["settings"]["access_key"]
             self.Secret_key = jsonCustomersList[str(self.id)]["settings"]["secret_key"]
+            self.BckVolumesRetention = jsonCustomersList[str(self.id)]["settings"]["bck_volumes_retention"]
 
             #Get from Redis
             if BOMBO_REDIS_HOST:
