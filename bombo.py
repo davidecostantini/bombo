@@ -478,6 +478,7 @@ class bombo(clsBaseClass):
         
         self.printMsg ("","---> " + str(len(instances)) + " Found")
         VolumesSnapshotMatchList = []
+        FailedVolumesSnapshot = []
 
         pointer=0
         for instance in instances:
@@ -525,9 +526,12 @@ class bombo(clsBaseClass):
                 #    vol.add_tag("Name", "### Copied ###")
 
                 self.printMsg ("","Snapshot volume " + vol.id + "...")
-                snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
-
-                VolumesSnapshotMatchList.append([vol,snapshot])
+                try:
+                    snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
+                    VolumesSnapshotMatchList.append([vol,snapshot])
+                except:
+                    self.printMsg ("", "ERROR trying to create snapshot for instance " + str(instance.id) + " - DEVICE:" + vol.attach_data.device)
+                    FailedVolumesSnapshot.append([vol])
 
                 self.printMsg ("","---> Done with [" + str(vol.id) + "] => " + "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
             
@@ -560,7 +564,7 @@ class bombo(clsBaseClass):
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
             VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE", VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE'))
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DEVICE", VolumesSnapshotMatch[0].attach_data.device)
-            VolumesSnapshotMatch[1].add_tag("Name", "### Backup of: " + VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE') + " ###")
+            VolumesSnapshotMatch[1].add_tag("Name", "Backup of: " + VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE'))
 
             self.printMsg ("","Snapshot " + str(VolumesSnapshotMatch[1].id))
             self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
@@ -602,6 +606,14 @@ class bombo(clsBaseClass):
             #print 'Anonymous snapshots that could be deleted: {number} snapshots totalling {size} GB'.format(number=anon_deletion_counter,size=anon_size_counter)
 
         self.printMsg ("","Hopefully everything went well......")
+        
+        #
+        # Print any snapshots that failed
+        if FailedVolumesSnapshot:
+            self.printMsg ("", "Unfortunately, things did not go so well......")
+            for FailedVolume in FailedVolumesSnapshot:
+                self.printMsg ("", "ERROR trying to create snapshot for instance " + FailedVolume[0].tags.get('bombo_backup:INSTANCE') + " , Device " + FailedVolume[0].tags.get('bombo_backup:DEVICE'))
+
 
 
     def getTagsFromInstance (self,kInstanceId):
