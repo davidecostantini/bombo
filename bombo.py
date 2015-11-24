@@ -478,6 +478,7 @@ class bombo(clsBaseClass):
         
         self.printMsg ("","---> " + str(len(instances)) + " Found")
         VolumesSnapshotMatchList = []
+        FailedVolumesSnapshot = []
 
         pointer=0
         for instance in instances:
@@ -524,17 +525,16 @@ class bombo(clsBaseClass):
                 vol.add_tag("bombo_backup:STATUS", vol.attach_data.status)
                 vol.add_tag("bombo_backup:DEVICE", vol.attach_data.device)
                 vol.add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
-                #sg commented out....changes the tags on the original volumes...no need for this imho
-                #if instance.tags.get('Name') :
-                #    vol.add_tag("Name", "### Copy of: " + instance.tags.get('Name') + " ###" )
-                #else:
-                #    vol.add_tag("Name", "### Copied ###")
+
                 self.printMsg ("","---> Done")
 
                 self.printMsg ("","Snapshot volume " + vol.id + "...")
-                snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
-
-                VolumesSnapshotMatchList.append([vol,snapshot])
+                try:
+                    snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
+                    VolumesSnapshotMatchList.append([vol,snapshot])
+                except:
+                    self.printMsg ("", "ERROR trying to create snapshot for instance " + str(instance.id) + " - DEVICE:" + vol.attach_data.device)
+                    FailedVolumesSnapshot.append([vol])
 
                 self.printMsg ("","---> Launching snapshot [" + str(vol.id) + "] => " + "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
             
@@ -569,10 +569,7 @@ class bombo(clsBaseClass):
                 if instance.tags.get('bombo_autosched:SCHEDULE') :
                     VolumesSnapshotMatch[1].add_tag("bombo_autosched:SCHEDULE", instance.tags.get('bombo_autosched:SCHEDULE'))
                     
-                #if instance.tags.get('Name') :
-                #    VolumesSnapshotMatch[1].add_tag("Name", "### BACKUP of :" + instance.tags.get('Name') + " ###")
-                #else:
-                VolumesSnapshotMatch[1].add_tag("Name", "### BACKUP ###")
+                VolumesSnapshotMatch[1].add_tag("Name", "Backup of: " + VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE'))
 
                 self.printMsg ("","Snapshot " + str(VolumesSnapshotMatch[1].id))
                 self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
@@ -621,6 +618,13 @@ class bombo(clsBaseClass):
             #print 'Anonymous snapshots that could be deleted: {number} snapshots totalling {size} GB'.format(number=anon_deletion_counter,size=anon_size_counter)
 
         self.printMsg ("","Hopefully everything went well......")
+        
+        #
+        # Print any snapshots that failed
+        if FailedVolumesSnapshot:
+            self.printMsg ("", "Unfortunately, things did not go so well..... " + str(len(FailedVolumesSnapshot)) + " instances failed " )
+            for FailedVolume in FailedVolumesSnapshot:
+                self.printMsg ("", "ERROR trying to create snapshot for instance " + FailedVolume[0].tags.get('bombo_backup:INSTANCE') + " , Device " + FailedVolume[0].tags.get('bombo_backup:DEVICE'))
 
 
     def getTagsFromInstance (self,kInstanceId):
