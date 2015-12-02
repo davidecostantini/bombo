@@ -21,6 +21,7 @@ class clsCustomer(clsBaseClass):
     Dns_domain = ""
     Region = ""
     BckVolumesRetention = 1
+    HistoricalRetention = 1
 
     Instances = 0 #Instance number
 
@@ -85,6 +86,7 @@ class clsCustomer(clsBaseClass):
             self.Access_key = jsonCustomersList[str(self.id)]["settings"]["access_key"]
             self.Secret_key = jsonCustomersList[str(self.id)]["settings"]["secret_key"]
             self.BckVolumesRetention = jsonCustomersList[str(self.id)]["settings"]["bck_volumes_retention"]
+            self.HistoricalRetention = jsonCustomersList[str(self.id)]["settings"]["historical_volumes_retention"]
 
             #Get from Redis
             if BOMBO_REDIS_HOST:

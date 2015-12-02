@@ -444,7 +444,7 @@ class bombo(clsBaseClass):
         self.printMsg ("","Hopefully everything went well......")
 
 
-    def BackupInstance(self,kCustomerId,kRegion,kInstanceId,kKeepInstanceOn = False, kFlushOldBackup = False):
+    def BackupInstance(self,kCustomerId,kRegion,kInstanceId,kKeepInstanceOn = False, kFlushOldBackup = False, kKeepHistoricals = False):
         from datetime import datetime, timedelta
         import sys, time
         import boto.ec2
@@ -568,15 +568,17 @@ class bombo(clsBaseClass):
             self.printMsg ("","---> " + "bombo_backup:DEVICE " + VolumesSnapshotMatch[0].attach_data.device)
             
         #
-        # Purge old snapshots
         # Snapshots have been made, now to purge the old ones
         if kFlushOldBackup:
             deletion_counter = 0
             size_counter = 0
             
             delete_time = datetime.utcnow() - timedelta(days=ObjCustomer.BckVolumesRetention)
-            oneyearold = datetime.utcnow() - timedelta(days=365)
-            self.printMsg ("","Deleting any snapshots older than {days} days (except for the 1st of the month to a maximum of 12 months)".format(days=ObjCustomer.BckVolumesRetention))
+            historical_age = datetime.utcnow() - timedelta(days=ObjCustomer.HistoricalRetention)
+            if kKeepHistoricals:
+                self.printMsg ("","Deleting any snapshots older than {days} days (except for those created on the 1st of the month which are kept for {history} days)".format(days=ObjCustomer.BckVolumesRetention,history=ObjCustomer.HistoricalRetention))
+            else:
+                self.printMsg ("","Deleting any snapshots older than {days} days".format(days=ObjCustomer.BckVolumesRetention))
 
             snapshots = self.__awsConnection.get_all_snapshots()
 
@@ -585,22 +587,34 @@ class bombo(clsBaseClass):
                     if snapshot.tags.get('bombo_backup:INSTANCE') == kInstanceId:
 
                         start_time = datetime.strptime(snapshot.start_time,'%Y-%m-%dT%H:%M:%S.000Z')
-                  
-                        # If the backup is older than retention period, but not the 1st of the month, delete it
-                        if (start_time < delete_time and start_time.day <> 01): 
-                            print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
-                            deletion_counter = deletion_counter + 1
-                            size_counter = size_counter + snapshot.volume_size
+                     
+                        if kKeepHistoricals:
+                            # We want to keep a monthly backup from the 1st of the month until the maximum age as per configured by the customer
+                            if (start_time < delete_time and start_time.day <> 1): 
+                                # If the backup is older than retention period, but it wasn't created on the 1st of the month, delete it
+                                print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                deletion_counter = deletion_counter + 1
+                                size_counter = size_counter + snapshot.volume_size
 
-                            snapshot.delete(dry_run=False)
-                        # Else if the snapshot was on the 1st of the month AND it is older than 1 year it can be deleted.
-                        elif start_time.day == 01 and start_time < oneyearold:
-                            print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
-                            deletion_counter = deletion_counter + 1
-                            size_counter = size_counter + snapshot.volume_size
-                            
-                            snapshot.delete(dry_run=False)
-                            
+                                snapshot.delete(dry_run=False)
+                            elif start_time.day == 1 and start_time < historical_age:
+                                # Else if the snapshot was on the 1st of the month AND it is older than the historical retention period it can be deleted.
+                                print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                deletion_counter = deletion_counter + 1
+                                size_counter = size_counter + snapshot.volume_size
+                                
+                                snapshot.delete(dry_run=False)
+                        else:
+                           # If the backup is older than retention period, delete it as we are not interested in keeping monthlies
+                            if start_time < delete_time:
+                                print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                deletion_counter = deletion_counter + 1
+                                size_counter = size_counter + snapshot.volume_size
+
+                                snapshot.delete(dry_run=False)
+
+ 
+                        
             print 'Deleted {number} snapshots totalling {size} GB'.format(number=deletion_counter,size=size_counter)
         self.printMsg ("","Hopefully everything went well......")
         
