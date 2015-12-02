@@ -30,7 +30,7 @@ def main(args):
 		bmb.CopyInstance(args[1],args[2],args[3],args[4],kKeepInstanceOn)
 
 	elif action == "backup":
-		checkParams(args,{4,5,6})
+		checkParams(args,{4,5,6,7})
 		
 		kKeepInstanceOn = args[4] if len(args) > 4 else False
 		kKeepInstanceOn = True if kKeepInstanceOn in ['true', '1', 'True'] else False
@@ -38,7 +38,10 @@ def main(args):
 		kFlushOldBackup = args[5] if len(args) > 5 else False
 		kFlushOldBackup = True if kFlushOldBackup in ['true', '1', 'True'] else False
 
-		bmb.BackupInstance(args[1],args[2],args[3],kKeepInstanceOn,kFlushOldBackup)
+		kKeepHistoricals = args[6] if len(args) > 6 else False
+		kKeepHistoricals = True if kKeepHistoricals in ['true', '1', 'True'] else False
+
+		bmb.BackupInstance(args[1],args[2],args[3],kKeepInstanceOn,kFlushOldBackup,kKeepHistoricals)
 
 	elif action == "scheduling":
 		checkParams(args,{2})
