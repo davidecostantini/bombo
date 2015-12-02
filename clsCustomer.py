@@ -73,7 +73,7 @@ class clsCustomer(clsBaseClass):
 
 
     def loaData(self):
-        self.printMsg ("","[BOMBO] Loading customer...")
+        self.printMsg ("","Loading customer...")
 
         jsonCustomersList = self.loadJsonFile(self.__ObjConfig)
 
@@ -100,7 +100,7 @@ class clsCustomer(clsBaseClass):
 
         except Exception, e:
             self.printMsg ("loadData",e.args[0],True,True)
-        
+
 
     def getInstances(self):
         if self.__Instances == "":
@@ -111,7 +111,7 @@ class clsCustomer(clsBaseClass):
         if kInstanceId == "":
             self.printMsg ("","Ooh no, you must specify the Instance ID!",True,True)
 
-        return self.getAllAwsInstances(kInstanceId)        
+        return self.getAllAwsInstances(kInstanceId)
 
 
     def getAllAwsInstances(self,kInstanceId=""):
@@ -119,18 +119,18 @@ class clsCustomer(clsBaseClass):
 
         self.doAwsConnection()
 
-        self.printMsg ("","[BOMBO] Getting instance details...")  
+        self.printMsg ("","[BOMBO] Getting instance details...")
         if kInstanceId != "":
             reservations = self.__awsConnection.get_all_instances(instance_ids=[kInstanceId])
             if not reservations[0].instances:
-                self.printMsg ("","Ooh no, i can't find the instance -> " + kInstanceId + "!",True,True)             
+                self.printMsg ("","Ooh no, i can't find the instance -> " + kInstanceId + "!",True,True)
             result = reservations[0].instances[0]
-            self.printMsg ("","---> " + result.id) 
+            self.printMsg ("","---> " + result.id)
         else:
-            reservations = self.__awsConnection.get_all_instances()           
+            reservations = self.__awsConnection.get_all_instances()
             result = reservations[0].instances
-            self.printMsg ("","---> Found " + str(len(result)) + " instances") 
-        
+            self.printMsg ("","---> Found " + str(len(result)) + " instances")
+
         return result
 
 
@@ -144,15 +144,15 @@ class clsCustomer(clsBaseClass):
         import boto
 
         self.doAwsConnection()
-        
+
         InstancesCollection = []
 
-        self.printMsg ("","[BOMBO] Getting instance details...")  
+        self.printMsg ("","[BOMBO] Getting instance details...")
         if kInstanceId != "":
             reservations = self.__awsConnection.get_all_instances(instance_ids=[kInstanceId])
             if not reservations[0].instances:
                 self.printMsg ("","Ooh no, i can't find the instance -> " + kInstanceId + "!",True,True)
-          
+
             InstancesCollection.append(
                 clsInstance(
                     reservations[0].instances[0].id,
@@ -160,7 +160,7 @@ class clsCustomer(clsBaseClass):
                     reservations[0].instances[0]
                     )
                 )
-            self.printMsg ("","---> " + reservations[0].instances[0].id) 
+            self.printMsg ("","---> " + reservations[0].instances[0].id)
         else:
             reservations = self.__awsConnection.get_all_instances()
 
@@ -177,6 +177,6 @@ class clsCustomer(clsBaseClass):
             if BOMBO_REDIS_HOST:
                 self.__redisdb.set("hset","",len(reservations),"instances")
 
-            self.printMsg ("","---> Found " + str(len(InstancesCollection)) + " instances") 
+            self.printMsg ("","---> Found " + str(len(InstancesCollection)) + " instances")
 
         return InstancesCollection

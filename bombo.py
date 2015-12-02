@@ -453,8 +453,8 @@ class bombo(clsBaseClass):
         # Will tag all the volumes on the instances requested, then make a snapshot of the volumes, then tag the snapshots, then purge
         self.showInitialMsg()
 
-        if kKeepInstanceOn:
-            self.printMsg ("","###> You choose to backup the instance without switching it off, please check when done if it was completed successfully!")
+        if kKeepInstanceOn==True:
+            self.printMsg ("","###> You choose to backup the instances without switching them off, please check when done if it was completed successfully!")
 
         ObjCustomer = clsCustomer(kCustomerId)
 
@@ -494,8 +494,12 @@ class bombo(clsBaseClass):
             self.__awsConnection.create_tags([instance.id], {"bombo_backup": datetime.today().strftime('%d-%m-%Y %H:%M:%S')})
             self.printMsg ("","---> " + "bombo_backup - " + datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
 
-            if kKeepInstanceOn == False:
+            InstanceInitialStatusOn=False
+
+            if kKeepInstanceOn!= True:
+                
                 if instance.update() != "stopped":
+                    InstanceInitialStatusOn=True
                     self.printMsg ("","Stopping the instance...")
                     instances_to_stop = self.__awsConnection.stop_instances(instance_ids=instance.id)
                     counter = 0
@@ -512,15 +516,23 @@ class bombo(clsBaseClass):
                 else:
                     self.printMsg ("","Instance is already stopped...")
                 self.printMsg ("","---> Done")
-        
+
+            #Empty list
+            VolumesSnapshotMatchList = []
             for vol in vols:
                 self.printMsg ("","Tagging volume " + vol.id + "...")
                 vol.add_tag("bombo_backup:INSTANCE", instance.id)
                 vol.add_tag("bombo_backup:STATUS", vol.attach_data.status)
                 vol.add_tag("bombo_backup:DEVICE", vol.attach_data.device)
                 vol.add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
+<<<<<<< HEAD
                 
 
+=======
+
+                self.printMsg ("","---> Done")
+
+>>>>>>> master
                 self.printMsg ("","Snapshot volume " + vol.id + "...")
                 try:
                     snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
@@ -529,32 +541,30 @@ class bombo(clsBaseClass):
                     self.printMsg ("", "ERROR trying to create snapshot for instance " + str(instance.id) + " - DEVICE:" + vol.attach_data.device)
                     FailedVolumesSnapshot.append([vol])
 
-                self.printMsg ("","---> Done with [" + str(vol.id) + "] => " + "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
+                self.printMsg ("","---> Launching snapshot [" + str(vol.id) + "] => " + "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
             
-            self.printMsg ("","###--------------------------------------------------------------------------------###")
-            
-        self.printMsg ("","Waiting for the snapshots to be ready...")
+            self.printMsg ("","Waiting for the snapshots to be ready for instance " + instance.id)
 
-        counter = 0
-        progress = 0
-        singleValue = ""
-        spinner = self.spinning_cursor()
-        while progress < (100 * len(VolumesSnapshotMatchList)):
+            counter = 0
             progress = 0
-            for VolumesSnapshotMatch in VolumesSnapshotMatchList:
-                singleValue = VolumesSnapshotMatch[1].update()
-                if len(singleValue)==0:
-                    singleValue="0%"
-                progress = progress + int(singleValue[:-1])
-                time.sleep(2)
+            singleValue = ""
+            spinner = self.spinning_cursor()
+            while progress < (100 * len(VolumesSnapshotMatchList)):
+                progress = 0
 
-            sys.stdout.flush()
-            sys.stdout.write('\r')
-            sys.stdout.write(spinner.next() + " Waiting for " + str(len(VolumesSnapshotMatchList)) + " snapshots => Progress: " + str(progress / len(VolumesSnapshotMatchList)) + "%")
-        sys.stdout.write('\n')
+                for VolumesSnapshotMatch in VolumesSnapshotMatchList:
+                    singleValue = VolumesSnapshotMatch[1].update()
+                    if len(singleValue)==0:
+                        singleValue="0%"
+                    progress = progress + int(singleValue[:-1])
+                    time.sleep(2)
 
-        self.printMsg ("","---> Snapshots ready...")
+                sys.stdout.flush()
+                sys.stdout.write('\r')
+                sys.stdout.write(spinner.next() + " Waiting for " + str(len(VolumesSnapshotMatchList)) + " snapshots => Progress: " + str(progress / len(VolumesSnapshotMatchList)) + "%")
+            sys.stdout.write('\n')
 
+<<<<<<< HEAD
         self.printMsg ("","Tagging Snapshots...")
         for VolumesSnapshotMatch in VolumesSnapshotMatchList:
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
@@ -566,6 +576,31 @@ class bombo(clsBaseClass):
             self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
             self.printMsg ("","---> " + "bombo_backup:INSTANCE " + str(instance.id))
             self.printMsg ("","---> " + "bombo_backup:DEVICE " + VolumesSnapshotMatch[0].attach_data.device)
+=======
+            self.printMsg ("","---> Snapshots ready...")
+
+            self.printMsg ("","Tagging Snapshots...")
+            for VolumesSnapshotMatch in VolumesSnapshotMatchList:
+                VolumesSnapshotMatch[1].add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
+                VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE", instance.id)
+                VolumesSnapshotMatch[1].add_tag("bombo_backup:DEVICE", VolumesSnapshotMatch[0].attach_data.device)
+                if instance.tags.get('bombo_autosched:SCHEDULE') :
+                    VolumesSnapshotMatch[1].add_tag("bombo_autosched:SCHEDULE", instance.tags.get('bombo_autosched:SCHEDULE'))
+                    
+                VolumesSnapshotMatch[1].add_tag("Name", "Backup of: " + VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE'))
+
+                self.printMsg ("","Snapshot " + str(VolumesSnapshotMatch[1].id))
+                self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
+                self.printMsg ("","---> " + "bombo_backup:INSTANCE " + str(instance.id))
+                self.printMsg ("","---> " + "bombo_backup:DEVICE " + VolumesSnapshotMatch[0].attach_data.device)
+
+            if kKeepInstanceOn == False and InstanceInitialStatusOn == True:
+                self.printMsg ("","Restarting instance...")
+                self.__awsConnection.start_instances(instance_ids=instance.id)
+                self.printMsg ("","---> Done...")
+
+            self.printMsg ("","###--------------------------------------------------------------------------------###")
+>>>>>>> master
             
         #
         # Purge old snapshots
@@ -607,10 +642,16 @@ class bombo(clsBaseClass):
         #
         # Print any snapshots that failed
         if FailedVolumesSnapshot:
+<<<<<<< HEAD
             self.printMsg ("", "Unfortunately, things did not go so well......")
             for FailedVolume in FailedVolumesSnapshot:
                 self.printMsg ("", "ERROR trying to create snapshot for instance " + FailedVolume[0].tags.get('bombo_backup:INSTANCE') + " , Device " + FailedVolume[0].tags.get('bombo_backup:DEVICE'))
 
+=======
+            self.printMsg ("", "Unfortunately, things did not go so well..... " + str(len(FailedVolumesSnapshot)) + " instances failed " )
+            for FailedVolume in FailedVolumesSnapshot:
+                self.printMsg ("", "ERROR trying to create snapshot for instance " + FailedVolume[0].tags.get('bombo_backup:INSTANCE') + " , Device " + FailedVolume[0].tags.get('bombo_backup:DEVICE'))
+>>>>>>> master
 
 
     def getTagsFromInstance (self,kInstanceId):

@@ -13,7 +13,6 @@ print_msg() {
   echo -e "$msg \e[0m"
 }
 
-
 INST_DIR="/usr/local/bombo"
 
 # Make sure only root can run our script
@@ -51,10 +50,10 @@ print_msg "cyan" "OS $OS Version $VER"
 
 print_msg "cyan" "Install pip for $OS"
 if [ "$OS" == "Debian" ]; then
-    sudo apt-get install -y python-pip
+    sudo apt-get install -y python python-pip
     sudo pip install --upgrade pip
 elif [ "$OS" == "RedHat" ]; then
-    yum -y install python-pip
+    yum -y install python python-pip
 fi;
 
 
