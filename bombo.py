@@ -585,41 +585,43 @@ class bombo(clsBaseClass):
 
             for snapshot in snapshots:
                 if 'bombo_backup:INSTANCE' in snapshot.tags:
-                    start_time = datetime.strptime(snapshot.start_time,'%Y-%m-%dT%H:%M:%S.000Z')
-                 
-                    if kKeepHistoricals:
-                        # We want to keep a monthly backup from the 1st of the month until the maximum age as per configured by the customer
-                        if (start_time < delete_time and start_time.day <> 1): 
-                            # If the backup is older than retention period, but it wasn't created on the 1st of the month, delete it
-                            print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
-                            deletion_counter = deletion_counter + 1
-                            size_counter = size_counter + snapshot.volume_size
+                    if ((snapshot.tags.get('bombo_backup:INSTANCE') == kInstanceId) or (str(kInstanceId).lower() == "all")):
+                        #Only purge specified instance snapshot OR all of the bombo snapshots
+                        start_time = datetime.strptime(snapshot.start_time,'%Y-%m-%dT%H:%M:%S.000Z')
+                     
+                        if kKeepHistoricals:
+                            # We want to keep a monthly backup from the 1st of the month until the maximum age as per configured by the customer
+                            if (start_time < delete_time and start_time.day <> 1): 
+                                # If the backup is older than retention period, but it wasn't created on the 1st of the month, delete it
+                                print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                deletion_counter = deletion_counter + 1
+                                size_counter = size_counter + snapshot.volume_size
 
-                            try:
-                                snapshot.delete(dry_run=False)
-                            except:
-                                FailedDeleteSnapshot.append(snapshot.id)
-                        elif start_time.day == 1 and start_time < historical_age:
-                            # Else if the snapshot was on the 1st of the month AND it is older than the historical retention period it can be deleted.
-                            print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
-                            deletion_counter = deletion_counter + 1
-                            size_counter = size_counter + snapshot.volume_size
-                            
-                            try:
-                                snapshot.delete(dry_run=False)
-                            except:
-                                FailedDeleteSnapshot.append(snapshot.id)
-                    else:
-                       # If the backup is older than retention period, delete it as we are not interested in keeping monthlies
-                        if start_time < delete_time:
-                            print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
-                            deletion_counter = deletion_counter + 1
-                            size_counter = size_counter + snapshot.volume_size
+                                try:
+                                    snapshot.delete(dry_run=False)
+                                except:
+                                    FailedDeleteSnapshot.append(snapshot.id)
+                            elif start_time.day == 1 and start_time < historical_age:
+                                # Else if the snapshot was on the 1st of the month AND it is older than the historical retention period it can be deleted.
+                                print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                deletion_counter = deletion_counter + 1
+                                size_counter = size_counter + snapshot.volume_size
+                                
+                                try:
+                                    snapshot.delete(dry_run=False)
+                                except:
+                                    FailedDeleteSnapshot.append(snapshot.id)
+                        else:
+                           # If the backup is older than retention period, delete it as we are not interested in keeping monthlies
+                            if start_time < delete_time:
+                                print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                deletion_counter = deletion_counter + 1
+                                size_counter = size_counter + snapshot.volume_size
 
-                            try:
-                                snapshot.delete(dry_run=False)
-                            except:
-                                FailedDeleteSnapshot.append(snapshot.id)
+                                try:
+                                    snapshot.delete(dry_run=False)
+                                except:
+                                    FailedDeleteSnapshot.append(snapshot.id)
 
  
                         
