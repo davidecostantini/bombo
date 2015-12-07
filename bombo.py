@@ -11,7 +11,7 @@ from clsSingleLaunch import *
 from clsScheduling import *
 from clsInstanceSched import *
 
-BOMBO_VERSION="1.3.2"
+BOMBO_VERSION="1.3.3"
 
 class LaunchConfig(clsBaseClass):
     __ObjConfig = None
@@ -479,6 +479,7 @@ class bombo(clsBaseClass):
         self.printMsg ("","---> " + str(len(instances)) + " Found")
         VolumesSnapshotMatchList = []
         FailedVolumesSnapshot = []
+        FailedDeleteSnapshot = []
 
         pointer=0
         for instance in instances:
@@ -584,8 +585,8 @@ class bombo(clsBaseClass):
 
             for snapshot in snapshots:
                 if 'bombo_backup:INSTANCE' in snapshot.tags:
-                    if snapshot.tags.get('bombo_backup:INSTANCE') == kInstanceId:
-
+                    if ((snapshot.tags.get('bombo_backup:INSTANCE') == kInstanceId) or (str(kInstanceId).lower() == "all")):
+                        #Only purge specified instance snapshot OR all of the bombo snapshots
                         start_time = datetime.strptime(snapshot.start_time,'%Y-%m-%dT%H:%M:%S.000Z')
                      
                         if kKeepHistoricals:
@@ -596,14 +597,20 @@ class bombo(clsBaseClass):
                                 deletion_counter = deletion_counter + 1
                                 size_counter = size_counter + snapshot.volume_size
 
-                                snapshot.delete(dry_run=False)
+                                try:
+                                    snapshot.delete(dry_run=False)
+                                except:
+                                    FailedDeleteSnapshot.append(snapshot.id)
                             elif start_time.day == 1 and start_time < historical_age:
                                 # Else if the snapshot was on the 1st of the month AND it is older than the historical retention period it can be deleted.
                                 print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
                                 deletion_counter = deletion_counter + 1
                                 size_counter = size_counter + snapshot.volume_size
                                 
-                                snapshot.delete(dry_run=False)
+                                try:
+                                    snapshot.delete(dry_run=False)
+                                except:
+                                    FailedDeleteSnapshot.append(snapshot.id)
                         else:
                            # If the backup is older than retention period, delete it as we are not interested in keeping monthlies
                             if start_time < delete_time:
@@ -611,7 +618,10 @@ class bombo(clsBaseClass):
                                 deletion_counter = deletion_counter + 1
                                 size_counter = size_counter + snapshot.volume_size
 
-                                snapshot.delete(dry_run=False)
+                                try:
+                                    snapshot.delete(dry_run=False)
+                                except:
+                                    FailedDeleteSnapshot.append(snapshot.id)
 
  
                         
@@ -624,7 +634,9 @@ class bombo(clsBaseClass):
             self.printMsg ("", "Unfortunately, things did not go so well......")
             for FailedVolume in FailedVolumesSnapshot:
                 self.printMsg ("", "ERROR trying to create snapshot for instance " + FailedVolume[0].tags.get('bombo_backup:INSTANCE') + " , Device " + FailedVolume[0].tags.get('bombo_backup:DEVICE'))
-
+            print ("")
+            for FailedDelete in FailedDeleteSnapshot:
+                self.printMsg ("", "ERROR trying to delete snapshot  " + FailedDelete)
 
 
     def getTagsFromInstance (self,kInstanceId):
