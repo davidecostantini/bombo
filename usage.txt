@@ -1,9 +1,18 @@
  -----USAGE MANUAL-------
  ------------------------
- run <config_name>                                                                                                           -> Launch a config
- backup <customer_id> <region> <instance_id> [<keep_instance_on>] [<flush_bck_snapshots>] [<keep_historical_monthlies>]      -> Backup instance volumes
- copy <customer_id> <region> <instance_id> <subnet> [<keep_instance_on>]                                                     -> Start instance copy
- scheduling <customer_id>                                                                                                    -> Apply power schedule to each instance
+ run <Oracle/Aws> <config_name>                                                                                                           -> Launch a config
+ backup <Oracle/Aws> <customer_id> <region> <instance_id> [<keep_instance_on>] [<flush_bck_snapshots>] [<keep_historical_monthlies>]      -> Backup instance volumes
+ copy <Oracle/Aws> <customer_id> <region> <instance_id> <subnet> [<keep_instance_on>]                                                     -> Start instance copy
+ scheduling <Oracle/Aws> <customer_id>                                                                                                    -> Apply power schedule to each instance
  version                                                                                                                     -> Show the app version
  usage                                                                                                                       -> Show this guide
  ------------------------
+ Help
+ <Oracle/Aws>   Oracle or AWS
+ <config_name>  
+ <customer_id> 
+ <region> 
+ <instance_id> 
+ [<keep_instance_on>] 
+ [<flush_bck_snapshots>] 
+ [<keep_historical_monthlies>] 
