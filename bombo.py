@@ -694,12 +694,11 @@ class bombo(clsBaseClass):
             schedValues=""
             if instance.tags.get('bombo_autosched:SCHEDULE') :
                 schedValues                      = instance.tags.get('bombo_autosched:SCHEDULE').upper().split(",")
+                ObjInstanceSched.schedEnabled    = (True if schedValues[0] == "Y" else False)
                 ObjInstanceSched.start           = schedValues[1].split("-")[0].replace(":"," ")
                 ObjInstanceSched.end             = schedValues[1].split("-")[1].replace(":"," ")
                 ObjInstanceSched.day             = int(schedValues[2])
-                ObjInstanceSched.schedEnabled    = (True if schedValues[0] == "Y" else False)
                 ObjInstanceSched.deps            = str(instance.tags.get('bombo_autosched:DEPS'))
-
 
             #Adding instance even if SCHEDULING is not enabled
             ObjInstanceSched.instance            = instance
@@ -727,15 +726,25 @@ class bombo(clsBaseClass):
                     self.printMsg ("","###> Error with the tag bombo_autosched:SCHEDULE (expecting <Y/N>,hh:mm-hh:mm,<days>), found:   " + instance.tags.get('bombo_autosched:SCHEDULE') + " on instance: " + instance.id )
 
 
-            # tag all the instances with the Auto Scheduling tags if it does not already exist, but set it to be ignored.
-            #if not instance.tags.get('bombo_autosched:SCHEDULE'):
-            #    self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5"})
+            # # tag all the instances with the Auto Scheduling tags if it does not already exist, but set it to be ignored.
+            # if not instance.tags.get('bombo_autosched:SCHEDULE'):
+            #     self.printMsg ("","Adding tag SCHEDULE to instance " + instance.id)
+            #     self.__awsConnection.create_tags([instance.id], {"bombo_autosched:SCHEDULE": "N,08:00-20:00,5,N,08:00-20:00,5,A"})
+
+            # if not instance.tags.get('bombo_autosched:DEPS'):
+            #     self.printMsg ("","Adding tag DEPS to instance " + instance.id)
+            #     self.__awsConnection.create_tags([instance.id], {"bombo_autosched:DEPS": ""})
 
         ObjScheduling = clsScheduling()
 
         listToStart=ObjScheduling.getScheduledListStartup(taskInstancesSchedListStartup,fullInstancesSchedList)
         self.printMsg ("","Found " + str(len(listToStart)) + " instances to start!")
         for i in listToStart:
+
+            #Check if the dependency can be started automatically
+            if i.isADeps and not i.schedEnabled:
+                self.printMsg ("","###> A depencendy instance was not scheduled for startup automatically: " + i.instance.id,True,True)
+
             self.printMsg ("","Starting instance [" +  i.instance.id + "]")
             tmpInstance=self.__awsConnection.start_instances(i.instance.id)
 
