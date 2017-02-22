@@ -1,11 +1,9 @@
 from clsBaseClass import *
-from clsRedis import *
 from clsDNSRecord import *
 
 class clsInstance(clsBaseClass):
     __ObjCustomer = None
     __AwsInstance = None
-    __redisdb = None
     __ObjDns = None
 
     id = ""
@@ -33,9 +31,6 @@ class clsInstance(clsBaseClass):
         self.__ObjCustomer = kObjCustomer
         self.__AwsInstance = kAwsInstance
 
-        if BOMBO_REDIS_HOST:
-            self.__redisdb = clsRedis("customer:" + str(kObjCustomer.id) + ":instance:" + self.id)
-
         self.loadData()
 
     def loadData(self):
@@ -56,11 +51,11 @@ class clsInstance(clsBaseClass):
             "key": "",
             "status": "",
             "last_update": "",
-        }        
+        }
 
         try:
             self.printMsg ("","Pulling instance info for " + self.id + " ...")
-            
+
             self.Zone = self.__AwsInstance.placement
             self.Vpc_id = self.__AwsInstance.vpc_id
             self.Subnet_id = self.__AwsInstance.subnet_id
@@ -69,10 +64,7 @@ class clsInstance(clsBaseClass):
             self.Public_ip = self.__AwsInstance.ip_address
             self.Private_dns = self.__AwsInstance.private_dns_name
             self.Public_dns = self.__AwsInstance.public_dns_name
-            self.Status = self.__AwsInstance.state 
-
-            if BOMBO_REDIS_HOST:
-                self.Infom_dns = self.__redisdb.get("hget","","infom_dns")
+            self.Status = self.__AwsInstance.state
 
         except Exception, e:
             self.printMsg ("loadData",e.args[0],True,True)
@@ -87,39 +79,12 @@ class clsInstance(clsBaseClass):
             self.Ami = self.__AwsInstance.image_id
             self.Private_ip = self.__AwsInstance.private_ip_address
             self.Public_ip = self.__AwsInstance.ip_address
-            self.Private_dns = self.__AwsInstance.private_dns_name  
+            self.Private_dns = self.__AwsInstance.private_dns_name
             self.Public_dns = self.__AwsInstance.public_dns_name
-            self.Status = self.__AwsInstance.state  
+            self.Status = self.__AwsInstance.state
 
         except Exception, e:
-            self.printMsg ("refreshAWS",e.args[0],True,True) 
-
-    def updateRedis(self):
-        values = {
-            "type": self.Type,
-            "zone": self.Zone,
-            "vpc_id": self.Vpc_id,
-            "subnet_id": self.Subnet_id,
-            "ami": self.Ami,
-            "private_ip": self.Private_ip,
-            "public_ip": self.Public_ip,
-            "private_dns": self.Private_dns,
-            "public_dns": self.Public_dns,
-            "infom_dns": self.Infom_dns,
-            "poc": self.Poc,
-            "environment": self.Environment,
-            "key": self.Key,
-            "status": self.Status,
-            "last_update": self.getDate()
-        }    
-
-        try:
-            self.printMsg ("","[Redis] Updating " + self.id + " ...")
-            self.__redisdb.setBunchValues("hashes","",values)
-            self.printMsg ("","---> OK")
-
-        except Exception, e:
-            self.printMsg ("updateRedis",e.args[0],True,True)
+            self.printMsg ("refreshAWS",e.args[0],True,True)
 
 
     def setDns(self,kHostName):
@@ -132,8 +97,6 @@ class clsInstance(clsBaseClass):
             self.ObjDns.setRecord("A",kHostName,self.Private_ip)
             self.printMsg ("","---> OK")
 
-            if BOMBO_REDIS_HOST:
-                self.updateRedis()
         else:
             self.printMsg ("","###> A DNS record for " + kHostName + " already exist.")
 

@@ -1,6 +1,5 @@
 from config import *
 from bgcolors import *
-from clsRedis import *
 from clsBaseClass import *
 from clsCustomer import *
 from clsInstance import *
@@ -11,7 +10,7 @@ from clsSingleLaunch import *
 from clsScheduling import *
 from clsInstanceSched import *
 
-BOMBO_VERSION="1.3.3"
+BOMBO_VERSION="1.4.0"
 
 class LaunchConfig(clsBaseClass):
     __ObjConfig = None
@@ -34,7 +33,7 @@ class LaunchConfig(clsBaseClass):
         self.LaunchList = self.__getLaunchList(self.__ObjConfig['launch'])
 
         #Check if region was overloaded in the launch config
-        self.Region = self.__ObjConfig["region"] if self.__ObjConfig["region"] else self.Customer.Region      
+        self.Region = self.__ObjConfig["region"] if self.__ObjConfig["region"] else self.Customer.Region
 
         self.SNAPSHOT_MAX_AGE = self.__ObjConfig["SNAPSHOT_MAX_AGE"]
 
@@ -237,7 +236,7 @@ class bombo(clsBaseClass):
         self.printMsg ("","---> " + "Connected")
 
         self.printMsg ("","Getting instance details...")
-        
+
         reservations = self.__awsConnection.get_all_instances(instance_ids=[kInstanceId])
         instance = reservations[0].instances[0]
         self.printMsg ("","---> " + instance.id)
@@ -469,13 +468,13 @@ class bombo(clsBaseClass):
             self.printMsg("AWS","Ops! I found problems during connection..." + str(sys.exc_info()[0]),True,True)
 
         self.printMsg ("","---> " + "Connected")
-        
+
         self.printMsg ("","Getting instances details...")
         if kInstanceId == "all":
             instances = [i for r in self.__awsConnection.get_all_reservations() for i in r.instances]
         else:
             instances = [i for r in self.__awsConnection.get_all_instances(instance_ids=[kInstanceId]) for i in r.instances]
-        
+
         self.printMsg ("","---> " + str(len(instances)) + " Found")
         VolumesSnapshotMatchList = []
         FailedVolumesSnapshot = []
@@ -486,7 +485,7 @@ class bombo(clsBaseClass):
             pointer+=1
             self.printMsg ("","###--------------------------------------------------------------------------------###")
             self.printMsg ("","Working on " + instance.id + " [" + str(pointer) + " of " + str(len(instances)) + "]")
-        
+
             self.printMsg ("","Getting volumes...")
             vols = self.__awsConnection.get_all_volumes(filters={'attachment.instance-id': instance.id})
             self.printMsg ("","---> " + str(len(vols)) + " Volumes found")
@@ -513,14 +512,15 @@ class bombo(clsBaseClass):
                 else:
                     self.printMsg ("","Instance is already stopped...")
                 self.printMsg ("","---> Done")
-        
+
             for vol in vols:
-                self.printMsg ("","Tagging volume " + vol.id + "...")
-                vol.add_tag("bombo_backup:INSTANCE", instance.id)
-                vol.add_tag("bombo_backup:STATUS", vol.attach_data.status)
-                vol.add_tag("bombo_backup:DEVICE", vol.attach_data.device)
-                vol.add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
-                
+                if ObjCustomer.TagVolumesOnBackup == True:
+                    self.printMsg ("","Tagging volume " + vol.id + "...")
+                    vol.add_tag("bombo_backup:INSTANCE", instance.id)
+                    vol.add_tag("bombo_backup:STATUS", vol.attach_data.status)
+                    vol.add_tag("bombo_backup:DEVICE", vol.attach_data.device)
+                    vol.add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
+
 
                 self.printMsg ("","Snapshot volume " + vol.id + "...")
                 try:
@@ -531,9 +531,9 @@ class bombo(clsBaseClass):
                     FailedVolumesSnapshot.append([vol])
 
                 self.printMsg ("","---> Done with [" + str(vol.id) + "] => " + "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
-            
+
             self.printMsg ("","###--------------------------------------------------------------------------------###")
-            
+
         self.printMsg ("","Waiting for the snapshots to be ready...")
 
         counter = 0
@@ -567,13 +567,13 @@ class bombo(clsBaseClass):
             self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
             self.printMsg ("","---> " + "bombo_backup:INSTANCE " + str(instance.id))
             self.printMsg ("","---> " + "bombo_backup:DEVICE " + VolumesSnapshotMatch[0].attach_data.device)
-            
+
         #
         # Snapshots have been made, now to purge the old ones
         if kFlushOldBackup:
             deletion_counter = 0
             size_counter = 0
-            
+
             delete_time = datetime.utcnow() - timedelta(days=ObjCustomer.BckVolumesRetention)
             historical_age = datetime.utcnow() - timedelta(days=ObjCustomer.HistoricalRetention)
             if kKeepHistoricals:
@@ -588,10 +588,10 @@ class bombo(clsBaseClass):
                     if ((snapshot.tags.get('bombo_backup:INSTANCE') == kInstanceId) or (str(kInstanceId).lower() == "all")):
                         #Only purge specified instance snapshot OR all of the bombo snapshots
                         start_time = datetime.strptime(snapshot.start_time,'%Y-%m-%dT%H:%M:%S.000Z')
-                     
+
                         if kKeepHistoricals:
                             # We want to keep a monthly backup from the 1st of the month until the maximum age as per configured by the customer
-                            if (start_time < delete_time and start_time.day <> 1): 
+                            if (start_time < delete_time and start_time.day <> 1):
                                 # If the backup is older than retention period, but it wasn't created on the 1st of the month, delete it
                                 print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
                                 deletion_counter = deletion_counter + 1
@@ -606,7 +606,7 @@ class bombo(clsBaseClass):
                                 print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
                                 deletion_counter = deletion_counter + 1
                                 size_counter = size_counter + snapshot.volume_size
-                                
+
                                 try:
                                     snapshot.delete(dry_run=False)
                                 except:
@@ -623,11 +623,11 @@ class bombo(clsBaseClass):
                                 except:
                                     FailedDeleteSnapshot.append(snapshot.id)
 
- 
-                        
+
+
             print 'Deleted {number} snapshots totalling {size} GB'.format(number=deletion_counter,size=size_counter)
         self.printMsg ("","Hopefully everything went well......")
-        
+
         #
         # Print any snapshots that failed
         if FailedVolumesSnapshot:
@@ -659,9 +659,9 @@ class bombo(clsBaseClass):
                 self.printMsg ("","Adding TAG:" + tag)
                 self.__awsConnection.create_tags([kInstanceId], {tag:TagsList[tag]})
 
-                
 
-                
+
+
     def ApplyPowerSchedule(self,kCustomer):
         from datetime import datetime, date
         import sys, time, string

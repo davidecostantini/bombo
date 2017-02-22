@@ -7,9 +7,9 @@ print_msg() {
           msg="\e[1;32m $2" ;;
       "cyan" )
           msg="\e[1;36m $2" ;;
-      *) 
+      *)
           msg="\e[1;37m $2" ;;
-  esac  
+  esac
   echo -e "$msg \e[0m"
 }
 
@@ -56,9 +56,6 @@ elif [ "$OS" == "RedHat" ]; then
     yum -y install python python-pip
 fi;
 
-
-print_msg "cyan" "Installing dependencies"
-pip install redis boto
 
 print_msg "cyan" "Copying files to $INST_DIR"
 cp -R $CURR_DIR $INST_DIR

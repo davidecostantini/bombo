@@ -1,13 +1,11 @@
 from clsBaseClass import *
-from clsRedis import *
 
 class clsDNSRecord(clsBaseClass):
     import boto.route53
 
     __ObjCustomer = None
     __awsConnection = None
-    __redisdb = None
- 
+
     __instanceId = ""
 
     Type = ""
@@ -23,7 +21,7 @@ class clsDNSRecord(clsBaseClass):
 
         if kInstanceId != "":
             self.__instanceId = kInstanceId
-            self.getRecordByInstanceId(kInstanceId)
+            #self.getRecordByInstanceId(kInstanceId)  #Used when there was Redis
 
     def getAwsRecords(self,kType="", kName=""):
         try:
@@ -46,15 +44,6 @@ class clsDNSRecord(clsBaseClass):
                 return True
         return False
 
-    def getRecordByInstanceId(self, kInstanceId):
-        if not BOMBO_REDIS_HOST:
-            return None
-
-        if self.__redisdb == None:
-            self.__redisdb = clsRedis("customer:" + str(self.__ObjCustomer.id) + ":instance:" + kInstanceId)
-
-        return self.__redisdb.get("hget","","infom_dns")
-
     def getRecordByType(self, kType, kName):
         return self.getAwsRecords(self,kType, kName)
 
@@ -70,9 +59,3 @@ class clsDNSRecord(clsBaseClass):
 
         else:
             status = zone.add_record(kType, kName, kValue,ttl=1800);
-
-    def updateRedis(self, kType, kName, kValue):
-        self.__redisdb = clsRedis("dns:" + self.__instanceId)
-        self.__redisdb.set("hset","",kType,"type")
-        self.__redisdb.set("hset","",kName,"name")
-        self.__redisdb.set("hset","",kValue,"value")

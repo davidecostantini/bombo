@@ -1,12 +1,10 @@
 from clsBaseClass import *
-from clsRedis import *
 from clsInstance import *
 
 class clsCustomer(clsBaseClass):
     import boto.ec2
 
     __awsConnection = None
-    __redisdb = None
     __ObjConfig = None
     __Instances = ""
 
@@ -22,14 +20,12 @@ class clsCustomer(clsBaseClass):
     Region = ""
     BckVolumesRetention = 1
     HistoricalRetention = 1
+    TagVolumesOnBackup = 1
 
     Instances = 0 #Instance number
 
     def __init__(self, kCustomerId,kCustomersJsonConfig = ""):
         self.id = kCustomerId
-
-        if BOMBO_REDIS_HOST:
-            self.__redisdb = clsRedis("customer:" + str(kCustomerId))
 
         if kCustomersJsonConfig != "":
             self.__ObjConfig = kCustomersJsonConfig
@@ -54,25 +50,6 @@ class clsCustomer(clsBaseClass):
         except Exception, e:
             self.printMsg ("loadAws",e.args[0],True,True)
 
-
-    def updateRedis(self):
-        values = {
-            "name": self.Name,
-            "dns_domain": self.Dns_domain,
-            "region": self.Region,
-            "puppet_repo": self.Puppet_repo
-        }
-
-        try:
-            self.printMsg ("","[Redis] Updating " + self.Name + " ...")
-            self.__redisdb.set("hset","",len(self.getInstances()),"instances")
-            self.__redisdb.setBunchValues("hashes","",values)
-            self.printMsg ("","---> OK")
-
-        except Exception, e:
-            self.printMsg ("updateRedis",e.args[0],True,True)
-
-
     def loaData(self):
         self.printMsg ("","Loading customer...")
 
@@ -87,10 +64,7 @@ class clsCustomer(clsBaseClass):
             self.Secret_key = jsonCustomersList[str(self.id)]["settings"]["secret_key"]
             self.BckVolumesRetention = jsonCustomersList[str(self.id)]["settings"]["bck_volumes_retention"]
             self.HistoricalRetention = jsonCustomersList[str(self.id)]["settings"]["historical_volumes_retention"]
-
-            #Get from Redis
-            if BOMBO_REDIS_HOST:
-                self.instances = self.__redisdb.get("hget","","instances")
+            self.TagVolumesOnBackup = bool(jsonCustomersList[str(self.id)]["settings"]["tag_volumes_on_backup"])
 
             #Sensitive info
             self.Puppet_known_hosts = jsonCustomersList[str(self.id)]["settings"]["puppet_known_hosts"]
@@ -174,10 +148,6 @@ class clsCustomer(clsBaseClass):
                         inst.instances[0]
                         )
                     )
-
-            #Update Instances count
-            if BOMBO_REDIS_HOST:
-                self.__redisdb.set("hset","",len(reservations),"instances")
 
             self.printMsg ("","---> Found " + str(len(InstancesCollection)) + " instances")
 

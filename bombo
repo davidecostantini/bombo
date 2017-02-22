@@ -31,10 +31,10 @@ def main(args):
 
 	elif action == "backup":
 		checkParams(args,{4,5,6,7})
-		
+
 		kKeepInstanceOn = args[4] if len(args) > 4 else False
 		kKeepInstanceOn = True if kKeepInstanceOn in ['true', '1', 'True'] else False
-		
+
 		kFlushOldBackup = args[5] if len(args) > 5 else False
 		kFlushOldBackup = True if kFlushOldBackup in ['true', '1', 'True'] else False
 
@@ -46,12 +46,12 @@ def main(args):
 	elif action == "scheduling":
 		checkParams(args,{2})
 		bmb.ApplyPowerSchedule(args[1])
-		
+
 	elif action == "version":
 		bmb.showVersion()
 
 	elif action == "usage":
-		bmb.printUsage()		
+		bmb.printUsage()
 
 	#elif action == "snapshot":
 	#	bmb.UpdateSnapshots(args[1])

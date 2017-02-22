@@ -9,7 +9,10 @@
             "puppet_repo": "ssh://user@github.com/repo.git",
             "puppet_known_hosts": "",
             "puppet_ssh_private": "",
-            "puppet_ssh_pub": ""
+            "puppet_ssh_pub": "",
+            "bck_volumes_retention": "",
+            "historical_volumes_retention": "",
+            "tag_volumes_on_backup": "false"
         }
     }
 }
