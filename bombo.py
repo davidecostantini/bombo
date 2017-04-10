@@ -559,9 +559,9 @@ class bombo(clsBaseClass):
         self.printMsg ("","Tagging Snapshots...")
         for VolumesSnapshotMatch in VolumesSnapshotMatchList:
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
-            VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE", VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE'))
+            VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE", "{0}".format(VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE')))
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DEVICE", VolumesSnapshotMatch[0].attach_data.device)
-            VolumesSnapshotMatch[1].add_tag("Name", "Backup of: " + VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE'))
+            VolumesSnapshotMatch[1].add_tag("Name", "Backup of: " + "{0}".format(VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE')))
 
             self.printMsg ("","Snapshot " + str(VolumesSnapshotMatch[1].id))
             self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
