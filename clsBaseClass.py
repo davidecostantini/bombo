@@ -1,5 +1,6 @@
 from config import *
 from bgcolors import *
+import clsGuide
 
 class clsBaseClass():
     ##-----------------------------------##
@@ -26,9 +27,8 @@ class clsBaseClass():
         return str(datetime.date.today()) + "_" + str(datetime.datetime.time(datetime.datetime.now()))
 
     def printUsage(self):
-        with open('/usr/local/bombo/usage.txt', 'r') as f:
-            print f.read()
-        f.closed
+        #guide=clsGuide()
+        clsGuide.printGuide()
 
     def printMsg(self,kMsgCod,kMsgDesc,kQuit=False,kError=False,kWhiteTxt=False):
         import sys
@@ -63,7 +63,7 @@ class clsBaseClass():
         self.printMsg ("","HELLO I'm BOMBO, the best cloud boy in town... I'm not fat it's just EASY TO SEE ME!",False,False,True)
         self.printMsg ("",'------------------------',False,False,True)
 
-    def showVersion(self):        
+    def showVersion(self):
         from sys import version_info
         import bombo
         import boto.ec2

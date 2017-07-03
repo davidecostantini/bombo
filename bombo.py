@@ -10,7 +10,7 @@ from clsSingleLaunch import *
 from clsScheduling import *
 from clsInstanceSched import *
 
-BOMBO_VERSION="1.4.0"
+BOMBO_VERSION="1.4.1"
 
 class LaunchConfig(clsBaseClass):
     __ObjConfig = None
@@ -516,7 +516,8 @@ class bombo(clsBaseClass):
             for vol in vols:
                 if ObjCustomer.TagVolumesOnBackup == True:
                     self.printMsg ("","Tagging volume " + vol.id + "...")
-                    vol.add_tag("bombo_backup:INSTANCE", instance.id)
+                    vol.add_tag("bombo_backup:INSTANCE_ID", instance.id)
+                    vol.add_tag("bombo_backup:INSTANCE_NAME", instance.tags['Name'])
                     vol.add_tag("bombo_backup:STATUS", vol.attach_data.status)
                     vol.add_tag("bombo_backup:DEVICE", vol.attach_data.device)
                     vol.add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
@@ -524,13 +525,13 @@ class bombo(clsBaseClass):
 
                 self.printMsg ("","Snapshot volume " + vol.id + "...")
                 try:
-                    snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
-                    VolumesSnapshotMatchList.append([vol,snapshot])
+                    snapshot = self.__awsConnection.create_snapshot(vol.id, "INSTANCE: " + str(instance.id) + " - DEVICE:" + vol.attach_data.device)
+                    VolumesSnapshotMatchList.append([vol,snapshot,instance])
                 except:
                     self.printMsg ("", "ERROR trying to create snapshot for instance " + str(instance.id) + " - DEVICE:" + vol.attach_data.device)
                     FailedVolumesSnapshot.append([vol])
 
-                self.printMsg ("","---> Done with [" + str(vol.id) + "] => " + "INSTANCE: " + instance.id + " - DEVICE:" + vol.attach_data.device)
+                self.printMsg ("","---> Done with [" + str(vol.id) + "] => " + "INSTANCE: " + str(instance.id) + " - DEVICE:" + vol.attach_data.device)
 
             self.printMsg ("","###--------------------------------------------------------------------------------###")
 
@@ -559,13 +560,14 @@ class bombo(clsBaseClass):
         self.printMsg ("","Tagging Snapshots...")
         for VolumesSnapshotMatch in VolumesSnapshotMatchList:
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DATE", datetime.today().strftime('%d-%m-%Y %H:%M:%S'))
-            VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE", "{0}".format(VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE')))
+            VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE_ID", VolumesSnapshotMatch[2].id)
+            VolumesSnapshotMatch[1].add_tag("bombo_backup:INSTANCE_NAME", VolumesSnapshotMatch[2].tags.get('Name'))
             VolumesSnapshotMatch[1].add_tag("bombo_backup:DEVICE", VolumesSnapshotMatch[0].attach_data.device)
-            VolumesSnapshotMatch[1].add_tag("Name", "Backup of: " + "{0}".format(VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE')))
+            VolumesSnapshotMatch[1].add_tag("Name", "Snapshot of: " + VolumesSnapshotMatch[2].tags.get('Name'))
 
             self.printMsg ("","Snapshot " + str(VolumesSnapshotMatch[1].id))
             self.printMsg ("","---> " + "bombo_backup:DATE " + str(datetime.today().strftime('%d-%m-%Y %H:%M:%S')))
-            self.printMsg ("","---> " + "bombo_backup:INSTANCE " + str(instance.id))
+            self.printMsg ("","---> " + "bombo_backup:INSTANCE " + "{0}".format(VolumesSnapshotMatch[0].tags.get('bombo_backup:INSTANCE_NAME')) + " [" + str(instance.id)+"]")
             self.printMsg ("","---> " + "bombo_backup:DEVICE " + VolumesSnapshotMatch[0].attach_data.device)
 
         #
@@ -593,7 +595,7 @@ class bombo(clsBaseClass):
                             # We want to keep a monthly backup from the 1st of the month until the maximum age as per configured by the customer
                             if (start_time < delete_time and start_time.day <> 1):
                                 # If the backup is older than retention period, but it wasn't created on the 1st of the month, delete it
-                                print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                print ('Deleting {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE_ID')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
                                 deletion_counter = deletion_counter + 1
                                 size_counter = size_counter + snapshot.volume_size
 
@@ -603,7 +605,7 @@ class bombo(clsBaseClass):
                                     FailedDeleteSnapshot.append(snapshot.id)
                             elif start_time.day == 1 and start_time < historical_age:
                                 # Else if the snapshot was on the 1st of the month AND it is older than the historical retention period it can be deleted.
-                                print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
+                                print ('Deleting monthly {id}'.format(id=snapshot.id)) + " made on " + str(snapshot.tags.get('bombo_backup:DATE')) + " attached to " + str(snapshot.tags.get('bombo_backup:INSTANCE_ID')) + " mounted on " + str(snapshot.tags.get('bombo_backup:DEVICE'))
                                 deletion_counter = deletion_counter + 1
                                 size_counter = size_counter + snapshot.volume_size
 
@@ -626,7 +628,6 @@ class bombo(clsBaseClass):
 
 
             print 'Deleted {number} snapshots totalling {size} GB'.format(number=deletion_counter,size=size_counter)
-        self.printMsg ("","Hopefully everything went well......")
 
         #
         # Print any snapshots that failed
